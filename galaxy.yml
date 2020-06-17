@@ -1,8 +1,16 @@
 namespace: aktiur
 name: basic_roles
-version: 0.1
+version: 0.1.0
 readme: README.md
 authors:
   - Jill Royer
   - Arthur Cheysson
+repository: https://github.com/aktiur/basic_roles
+license:
+  - GPL-3.0-only
+tags:
+  - collection
+  - basic
+  - web
+
 
