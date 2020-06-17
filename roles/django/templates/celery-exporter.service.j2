@@ -1,0 +1,17 @@
+# {{ ansible_managed }}
+
+[Unit]
+Description=Django Celery Prometheus exporter
+
+[Service]
+ExecStart={{ django_python|quote }} -m celery_prometheus_exporter --addr localhost:9049 --broker redis://
+WorkingDirectory={{ django_src_directory|quote }}
+User={{ django_user }}
+Group={{ django_group }}
+Restart=on-failure
+KillSignal=SIGTERM
+Type=simple
+EnvironmentFile={{ django_env_file|quote }}
+
+[Install]
+WantedBy=multi-user.target

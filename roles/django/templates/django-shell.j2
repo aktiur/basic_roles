@@ -1,0 +1,29 @@
+#!/bin/sh
+# {{ ansible_managed }}
+
+SUDO=""
+
+if [ "$(whoami)" != ""{{ django_user }}" ]
+then
+    SUDO="sudo -H -u {{ django_user }}"
+fi
+
+if [ $# -eq 0 ]
+then
+    exec $SUDO {{ django_run_manage_command }} shell
+fi
+
+read -r -d SCRIPT << EOS
+import dotenv
+import django
+import runpy
+import sys
+dotenv.load_dotenv(dotenv_path='{{ django_env_file }}')
+django.setup()
+s=sys.argv.pop(1)
+runpy.run_path(s, {}, '__main__')
+EOS
+
+exec $SUDO \
+  env PYTHONPATH={{ django_src_directory|quote }} DJANGO_SETTINGS_MODULE={{ django_main_package|quote }} \
+  {{ django_python|quote }} -c "$SCRIPT" "$@"

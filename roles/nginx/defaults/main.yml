@@ -1,3 +1,2 @@
 nginx_latest_ppa: no
 cloudflare_protected: no
-nginx_log_format: default

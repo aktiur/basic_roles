@@ -1,0 +1,4 @@
+#!/bin/sh
+# {{ ansible_managed }}
+
+exec sudo -H -u {{ django_user|quote }} {{ django_run_manage_command }} "$@"

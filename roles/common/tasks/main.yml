@@ -1,42 +1,86 @@
-- name: Upgrade apt packages
-  apt: upgrade=dist update_cache=yes
+- name: Check we are on Ubuntu release
+  fail:
+    msg: You need to use Ubuntu Server
+  when: ansible_distribution != "Ubuntu"
+
+- name: Check we are on correct release
+  fail:
+    msg: You need to use one of the supported releases
+  when: ansible_distribution_release not in supported_releases
 
 - name: Ensure essentials packages are installed
   apt:
     name:
       - build-essential
-      - python3-pip
-      - python3-psycopg2
+      - python{{ system_python_version }}-pip
       - software-properties-common
       - apt-transport-https
       - apt-utils
       - debconf-utils
       - git
       - unzip
+      - net-tools
+      - ufw
+    update_cache: yes
+    cache_valid_time: "{{apt_cache_valid_time | default (3600)}}"
 
-- name: Ensure packages specific to bionic are installed
+- name: Ensure packages specific to bionic and forward are installed
   apt:
     name:
       - rsyslog
-  when: ansible_distribution_release == 'bionic'
+    update_cache: yes
+    cache_valid_time: "{{apt_cache_valid_time | default (3600)}}"
+  when: ansible_distribution_release != 'xenial'
 
-- name: add known hosts
-  copy:
-    src: ssh_known_hosts
-    dest: /etc/ssh/ssh_known_hosts
+- name: Ensure required locales are installed
+  locale_gen:
+    name: "{{ item }}"
+    state: present
+  with_items: "{{ locales }}"
 
-- name: ensure fail2ban is present/absent
+- name: Ensure default locale is set
+  lineinfile:
+    path: /etc/default/locale
+    regexp: "^LANG="
+    line: "LANG={{ default_locale }}"
+  when: default_locale is defined
+
+- name: Upgrade apt packages
+  apt:
+    upgrade: dist
+    update_cache: yes
+    cache_valid_time: "{{apt_cache_valid_time | default (3600)}}"
+
+- name: ensure system wide known hosts file exists
+  file:
+    path: /etc/ssh/ssh_known_hosts
+    state: touch
+    owner: root
+    group: root
+    mode: 0644
+    modification_time: preserve
+    access_time: preserve
+
+- name: ensure github is in known hosts
+  lineinfile:
+    path: /etc/ssh/ssh_known_hosts
+    regexp: "^github.com "
+    line: "github.com ssh-rsa AAAAB3NzaC1yc2EAAAABIwAAAQEAq2A7hRGmdnm9tUDbO9IDSwBK6TbQa+PXYPCPy6rbTrTtw7PHkccKrpp0yVhp5HdEIcKr6pLlVDBfOLX9QUsyCOV0wzfjIJNlGEYsdlLJizHhbn2mUjvSAHQqZETYP81eFzLQNnPHt4EVVUh7VfDESU84KezmD5QlWpXLmvU31/yMf+Se8xhHTvKSCZIFImWwoG6mbUoWf9nzpIoaSjB+weqqUUmpaaasXVal72J+UX2B+2RPW3RcT0eOzQgqlJL3RKrTJvdsjE3JEAvGq3lGHSZXy28G3skua2SmVi/w4yCE6gbODqnTWlg7+wC604ydGXA8VJiS5ap43JXiUFFAaQ=="
+
+- name: "ensure fail2ban is {{ cloudflare_protected | bool | ternary('absent', 'present') }}"
   apt:
     name: fail2ban
     state: "{{ cloudflare_protected | bool | ternary('absent', 'present') }}"
+    update_cache: yes
+    cache_valid_time: "{{apt_cache_valid_time | default (3600)}}"
 
 - name: ensure nginx is enabled in fail2ban
-  template:
+  copy:
     src: fail2ban_nginx.conf
     dest: /etc/fail2ban/jail.d/nginx.conf
   notify:
     - restart fail2ban
-  when: not cloudflare_protected|bool
+  when: not cloudflare_protected | bool
 
 - name: ensure journal directory is created
   file:
@@ -46,9 +90,6 @@
     mode: 02755
   notify:
     - restart journald
-
-- name: ensure ufw is installed
-  apt: name=ufw state=present
 
 - name: ufw default allow not to block nbd
   ufw:
@@ -72,18 +113,23 @@
   ufw:
     state: enabled
 
-- name: ensure network diagnostic tools are installed
+- name: ensure diagnostic tools are installed
   apt:
     name:
       - mtr
       - knot-dnsutils
       - nmap
       - iftop
+      - htop
       - vnstat
       - hping3
       - nload
+    update_cache: yes
+    cache_valid_time: "{{apt_cache_valid_time | default (3600)}}"
 
 - import_role: {name: nginx}
   tags: ["nginx"]
 - import_role: {name: letsencrypt}
   tags: ["letsencrypt"]
+- import_role: {name: ssmtp}
+  tags: ["ssmtp"]

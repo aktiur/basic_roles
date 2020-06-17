@@ -1,0 +1,8 @@
+[uwsgi]
+master = true
+chdir = {{ django_src_directory }}
+module = {{ django_main_package }}.wsgi:application
+processes = 2
+logto = {{ django_uwsgi_log_directory }}/{{ item.name }}.log
+env = ALLOWED_HOSTS={{ item.domain|default(django_domain) }}
+{{ item.uwsgi_config|default("") }}

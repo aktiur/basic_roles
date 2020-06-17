@@ -22,10 +22,6 @@
     priv: "matomo.*:ALL"
     state: present
 
-- name: Install unzip
-  apt:
-    name: unzip
-
 - name: Ensure matmoto directory exists
   file:
     path: "{{ matomo_root }}"
@@ -62,3 +58,12 @@
     user: root
     minute: "*/5"
     job: php /var/www/matomo/matomo/console core:archive -q
+
+- name: Ensure the cron task for optimizing is installed
+  cron:
+    name: matomo-optimize
+    user: root
+    minute: 0
+    hour: 6
+    day: 1
+    job: php /var/www/matomo/matomo/console database:optimize-archive-tables last2

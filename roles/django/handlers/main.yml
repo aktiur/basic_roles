@@ -1,2 +1,18 @@
-- name: restart django
-  service: name={{ app_name }}-django state=restarted
+- name: Restart Django uwsgi services
+  service:
+    name: "{{ django_app_name }}-{{ item.name }}"
+    state: restarted
+  loop: "{{ django_uwsgi_services }}"
+  listen:
+    - django app changed
+    - django uwsgi config changed
+
+
+- name: Restart Django celery services
+  systemd:
+    name: "{{ django_app_name }}-{{ item.name }}"
+    state: restarted
+  loop: "{{ django_celery_services }}"
+  listen:
+    - django app changed
+    - django celery config changed

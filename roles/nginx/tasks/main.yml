@@ -4,27 +4,38 @@
   when: nginx_latest_ppa|bool
 
 - name: Ensure Nginx is installed
-  apt: name=nginx state=latest
-
-- name: Ensure Nginx extras are installed
-  apt: name=nginx-extras state=latest
-
-- name: Ensure openssl is installed
-  apt: name=openssl state=present
+  apt:
+    name:
+      - nginx
+      - nginx-extras
+    state: present
+    update_cache: yes
+    cache_valid_time: "{{apt_cache_valid_time | default (3600)}}"
 
 - name: Ensure dhparams are present
   copy:
     dest: /etc/nginx/dhparams.pem
     src: dhparams.pem
 
-- name: Ensure nginx is well configured
-  template: src=etc/nginx/nginx.conf.j2 dest=/etc/nginx/nginx.conf
+- name: Install nginx.conf
+  template:
+    src: nginx.conf.j2
+    dest: /etc/nginx/nginx.conf
   notify:
     - reload nginx
 
+# See https://bugs.mageia.org/show_bug.cgi?id=26397 and https://github.com/Perl/perl5/issues/17154
+- name: Disable perl module on Focal
+  file:
+    path: /etc/nginx/modules-enabled/50-mod-http-perl.conf
+    state: absent
+  notify:
+    - reload nginx
+  when: ansible_distribution_release == "focal"
+
 - name: Copy helpful util conf includes
   template:
-    src: etc/nginx/{{ item }}.j2
+    src: "{{ item }}.j2"
     dest: /etc/nginx/{{ item }}
   loop:
     - uwsgi_params
@@ -39,14 +50,18 @@
     state: directory
 
 - name: Install letsencrypt includes
-  template: src=etc/nginx/includes/letsencrypt.conf.j2 dest=/etc/nginx/includes/letsencrypt.conf
+  copy:
+    src: letsencrypt.conf
+    dest: /etc/nginx/includes/letsencrypt.conf
   register: letsencrypt_includes
 
 - name: Ensure default site is not enabled
   file: path=/etc/nginx/sites-enabled/default state=absent
 
 - name: Ensure basic configuration for letsencrypt is present
-  copy: src=etc/nginx/sites-available/99-letsencrypt.conf dest=/etc/nginx/sites-available/99-letsencrypt.conf
+  copy:
+    src: 99-letsencrypt.conf
+    dest: /etc/nginx/sites-available/99-letsencrypt.conf
   register: letsencrypt_conf
 
 - name: Ensure basic configuration for letsencrypt is enabled
@@ -61,7 +76,7 @@
 
 - name: Copy additional nginx.service configuration
   copy:
-    src: etc/systemd/system/nginx.service.d
+    src: nginx.service.d
     dest: /etc/systemd/system/
   notify:
     - reload systemd
@@ -71,12 +86,23 @@
   service: name=nginx enabled=yes state=started
 
 - name: Ensure goaccess is available
-  apt: name=goaccess state=latest
+  apt:
+    name: goaccess
+    state: latest
+    update_cache: yes
+    cache_valid_time: "{{apt_cache_valid_time | default (3600)}}"
 
 - name: Ensure goaccess config file is present
   copy:
-    src: etc/goaccess.conf
+    src: goaccess.conf
     dest: /etc/goaccess.conf
+
+- name: Ensure /var/www is owned by www-data
+  file:
+    path: /var/www
+    owner: www-data
+    group: www-data
+    recurse: yes
 
 - name: Open port 80
   ufw:

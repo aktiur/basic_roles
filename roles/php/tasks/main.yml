@@ -13,7 +13,7 @@
   args:
     creates: "{{ php_conf_directory }}/fpm/pool.d/www.disabled"
   notify: reload php-fpm
-  when: not php_keep_default_pool
+  when: php_disable_default_pool
 
 - name: Copy php.ini
   template:

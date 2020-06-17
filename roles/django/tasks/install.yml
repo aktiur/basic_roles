@@ -1,29 +1,37 @@
-- name: install python
-  import_role: { name: python3 }
-
-- name: ensure libsystemd headers are installed
-  apt:
-    name: libsystemd-dev
-    state: latest
-
-- name: create app group
-  group: name={{ django_group }} system=yes
-
-- name: create app user
-  user: name={{ django_user }} group={{ django_group }} system=yes
-
-- name: create django directory
+- name: ensure static directory exists
   file:
-    path: "{{ django_directory }}"
+    path: "{{ django_static_directory }}"
+    state: directory
+    mode: 0755
+
+- name: ensure media directory exists
+  file:
+    path: "{{ django_media_directory }}"
     state: directory
     mode: 0755
     owner: "{{ django_user }}"
     group: "{{ django_group }}"
 
-- name: create log directory
-  file:
-    path: "{{ django_log_directory }}"
-    state: directory
-    mode: 0770
-    owner: "{{ django_user }}"
-    group: "{{ django_group }}"
+- name: ensure {{ django_app_name }}-shell utility script is present
+  template:
+    src: django-shell.j2
+    dest: "/usr/local/bin/{{ django_app_name }}-shell"
+    mode: 0755
+
+- name: ensure {{ django_app_name }}-manage utility is present
+  template:
+    src: manage.j2
+    dest: "/usr/local/bin/{{ django_app_name }}-manage"
+    mode: 0755
+
+- import_role:
+    name: virtualenv
+
+- import_tasks: uwsgi.yml
+  when: django_uwsgi_services|length > 0
+
+- import_tasks: celery.yml
+  when: django_celery_services|length > 0
+
+- import_tasks: nginx.yml
+  when: django_nginx_conf|bool

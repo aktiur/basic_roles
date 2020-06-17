@@ -1,0 +1,13 @@
+# {{ ansible_managed }}
+
+[Unit]
+Description=Unix socket for {{ django_app_name }}-{{ item.name }}
+
+[Socket]
+ListenStream=/run/uwsgi/{{ django_app_name }}-{{ item.name }}.socket
+SocketUser={{ item.user|default(django_user) }}
+SocketGroup=www-data
+SocketMode={{ item.socket_mode|default("0660") }}
+
+[Install]
+WantedBy=multi-user.target

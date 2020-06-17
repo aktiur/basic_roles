@@ -1,0 +1,21 @@
+
+- name: ensure nginx host configuration is present
+  template:
+    src: nginx.conf.j2
+    dest: /etc/nginx/sites-available/01-{{ django_app_name }}-{{ item.name }}.conf
+  vars:
+    main_domain: "{{ item.domain|default(django_domain) }}"
+    redirect_domains: "{{ item.redirect_domains|default([]) }}"
+  with_items: "{{ django_uwsgi_services }}"
+  notify:
+    - reload nginx
+
+- name: ensure nginx host configuration is enabled
+  file:
+    path: /etc/nginx/sites-enabled/01-{{ django_app_name }}-{{ item.name }}.conf
+    src: ../sites-available/01-{{ django_app_name }}-{{ item.name }}.conf
+    state: link
+  with_items: "{{ django_uwsgi_services }}"
+  notify:
+    - reload nginx
+  when: django_nginx_conf

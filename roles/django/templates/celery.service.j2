@@ -1,0 +1,27 @@
+# {{ ansible_managed }}
+
+[Unit]
+Description=Celery worker {{ django_app_name }}-{{ item.name }}
+
+[Service]
+ExecStart={{ django_python|quote }} -m celery worker \
+    --app {{ item.app|default(django_main_package)|quote }} \
+    --concurrency {{ item.concurrency|default(2) }} \
+    --logfile=/dev/null \
+{% if item.queues is defined and item.queues %}
+    --queues {{ item.queues|join(',')|quote }} \
+{% endif %}
+    --hostname {{ (django_app_name + "-" + item.name + "@%%h")|quote }} {{ item.celery_args|default("") }}
+WorkingDirectory={{ django_src_directory|quote }}
+User={{ item.user|default(django_user) }}
+Group={{ item.group|default(django_group) }}
+{% if item.runtime_directories is defined %}
+RuntimeDirectory={{ item.runtime_directories|join(' ') }}
+{% endif %}
+Restart=on-failure
+KillSignal=SIGTERM
+Type=simple
+EnvironmentFile={{ django_env_file|quote }}
+
+[Install]
+WantedBy=multi-user.target

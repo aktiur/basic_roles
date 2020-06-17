@@ -1,6 +1,11 @@
 - name: Install MariaDB
   apt:
-    name: mariadb-server,mariadb-client,python-mysqldb
+    name:
+      - mariadb-server
+      - mariadb-client
+      - python{{ system_python_version }}-mysqldb
+    update_cache: yes
+    cache_valid_time: "{{apt_cache_valid_time | default (3600)}}"
 
 - name: Set up matomo special mariadb conf
   copy:

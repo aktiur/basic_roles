@@ -1,5 +1,6 @@
 - name: reload systemd
-  command: systemctl daemon-reload
+  systemd:
+    daemon-reload: yes
 
 - name: restart journald
   service: name=systemd-journald state=restarted

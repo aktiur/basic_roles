@@ -1,0 +1,12 @@
+- name: collect staticfiles
+  command: "{{ django_run_manage_command }} collectstatic --noinput"
+  register: collectstatic
+  changed_when: not (collectstatic.stdout is search("\\b0 static files copied"))
+
+- name: apply database migrations
+  command: "{{ django_run_manage_command }} migrate --noinput"
+  become: true
+  become_user: "{{ django_user }}"
+  register: migrations
+  changed_when: "'No migrations to apply.' not in migrations.stdout"
+  notify: django app changed

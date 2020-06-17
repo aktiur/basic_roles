@@ -1,0 +1,28 @@
+# {{ ansible_managed }}
+
+[Unit]
+Description=UWSGI server {{ django_app_name }}-{{ item.name }}
+Requires={{ django_app_name }}-{{ item.name }}.socket
+
+[Service]
+ExecStart={{ django_uwsgi|quote }} --ini {{ ("/etc/uwsgi/apps-available/" + django_app_name + "-" + item.name + ".ini") | quote }}
+WorkingDirectory={{ django_src_directory|quote }}
+User={{ item.user|default(django_user) }}
+Group={{ item.group|default(django_group) }}
+{% if item.runtime_directories is defined %}
+RuntimeDirectory={{ item.runtime_directories|join(' ') }}
+{% endif %}
+Restart=on-failure
+KillSignal=SIGQUIT
+Type=notify
+NotifyAccess=all
+EnvironmentFile={{ django_env_file|quote }}
+
+{% if item.systemd_service_config|default("") %}
+# Beginning of service custom config
+{{ item.systemd_service_config }}
+# End of service custom config
+{% endif %}
+
+[Install]
+WantedBy=multi-user.target

@@ -11,15 +11,20 @@ uwsgi_cache_path /tmp/nginx_{{ main_domain }}_cache levels=1:2 keys_zone={{ main
     uwsgi_cache {{ main_domain }};
     uwsgi_cache_key $request_uri;
     uwsgi_cache_use_stale error timeout updating http_500 http_503;
-    uwsgi_pass unix:{{ django_unix_socket }};
+    uwsgi_pass unix:/run/uwsgi/{{ django_app_name }}-{{ item.name }}.socket;
     add_header X-Cache-Status $upstream_cache_status;
   }
 
   location /static/ {
-    alias {{ django_static_directory }};
+    expires max;
+    alias {{ django_static_directory }}/;
   }
 
-  location ~ ^/favicon(-\d+)?.(jpe?g|png|ico)$ {
-    root {{ django_static_directory }};
+  location /media/ {
+    alias {{ django_media_directory }}/;
+  }
+
+  location ~ ^/(favicon(?:-\d+)?.(?:jpe?g|png|ico))$ {
+    alias {{ django_static_directory }}/$1;
   }
 {% endblock %}

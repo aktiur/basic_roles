@@ -1,0 +1,30 @@
+- name: create app group
+  group:
+    name: "{{ django_group }}"
+    system: yes
+
+- name: create app user
+  user:
+    name: "{{ django_user }}"
+    group: "{{ django_group }}"
+    system: yes
+
+- name: ensure app directory exists
+  file:
+    path: "{{ django_directory }}"
+    state: directory
+    owner: "{{ django_user }}"
+    group: "{{ django_group }}"
+
+- name: ensure env file is up to date
+  template:
+    src: env.j2
+    dest: "{{ django_env_file }}"
+    mode: 0600
+    owner: "{{ django_user }}"
+    group: "{{ django_group }}"
+  notify:
+    - django app changed
+  tags:
+    - provision
+    - deploy

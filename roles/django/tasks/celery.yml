@@ -1,0 +1,52 @@
+
+- name: install celery service files
+  template:
+    src: celery.service.j2
+    dest: /etc/systemd/system/{{ django_app_name }}-{{ item.name }}.service
+  loop: "{{ django_celery_services }}"
+  register: django_celery_service_files
+  notify: django celery config changed
+
+- name: ensure the prometheus exporter for celery is configured
+  template:
+    src: celery-exporter.service.j2
+    dest: /etc/systemd/system/{{ django_app_name }}-celery-exporter.service
+  register: django_celery_exporter
+
+- name: Refresh systemd daemon
+  systemd:
+    daemon-reload: yes
+  when: django_celery_service_files.changed or django_celery_exporter.changed
+
+- name: ensure the celery services are enabled and started
+  systemd:
+    name: "{{ django_app_name }}-{{ item.name }}.service"
+    enabled: yes
+    state: started
+  loop: "{{ django_celery_services }}"
+
+- name: ensure the celery exporter is enabled and started
+  systemd:
+    name: "{{ django_app_name }}-celery-exporter.service"
+    enabled: yes
+    state: started
+
+- name: ensure nginx config for celery exporter is installed
+  template:
+    src: celery-exporter-nginx.conf.j2
+    dest: /etc/nginx/sites-available/03-{{ django_app_name }}-celery-exporter.conf
+
+- name: ensure nginx config for celery exporter is activated
+  file:
+    path: /etc/nginx/sites-enabled/03-{{ django_app_name }}-celery-exporter.conf
+    src: ../sites-available/03-{{ django_app_name }}-celery-exporter.conf
+    state: link
+  notify: reload nginx
+
+# TODO: make it configurable
+- name: open port 9050 to monitoring server
+  ufw:
+    rule: allow
+    port: 9050
+    src: "{{ item }}"
+  with_items: "{{ groups['monitoring'] | map('extract', hostvars, 'ansible_host') | list }}"

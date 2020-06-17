@@ -24,14 +24,14 @@
     direction: in
     from_ip: 10.0.0.0/8
     to_port: "{{ item }}"
-  loop: [443, 80]
+  loop: ["443", "80"]
 
 - name: Allow 443 from monitoring servers
   ufw:
     rule: allow
     direction: in
     from_ip: "{{ hostvars[item]['ansible_host'] }}/32"
-    to_port: 443
+    to_port: "443"
   loop: "{{ groups['monitoring'] }}"
 
 
@@ -41,4 +41,4 @@
     rule: allow
     direction: in
     to_port: "{{ item }}"
-  loop: [443, 80]
+  loop: ["443", "80"]

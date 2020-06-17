@@ -1,0 +1,52 @@
+- name: ensure uwsgi log directory exists
+  file:
+    path: "{{ django_uwsgi_log_directory }}"
+    state: directory
+    mode: 0770
+    owner: "{{ django_user }}"
+    group: "{{ django_group }}"
+
+- name: ensure uwsgi config directory exists
+  file:
+    path: "/etc/uwsgi/apps-available"
+    state: directory
+
+- name: copy uwsgi config files
+  template:
+    src: uwsgi.ini.j2
+    dest: /etc/uwsgi/apps-available/{{ django_app_name }}-{{ item.name }}.ini
+  loop: "{{ django_uwsgi_services }}"
+  notify:
+    - django uwsgi config changed
+
+- name: install uwsgi logrotate files
+  template:
+    src: logrotate.j2
+    dest: "/etc/logrotate.d/django"
+
+- name: install uwsgi socket files
+  template:
+    src: uwsgi.socket.j2
+    dest: /etc/systemd/system/{{ django_app_name}}-{{ item.name }}.socket
+  loop: "{{ django_uwsgi_services }}"
+  register: django_uwsgi_socket_unit
+
+- name: install uwsgi service files
+  template:
+    src: uwsgi.service.j2
+    dest: /etc/systemd/system/{{ django_app_name }}-{{ item.name }}.service
+  loop: "{{ django_uwsgi_services }}"
+  register: django_uwsgi_service_unit
+  notify: django uwsgi config changed
+
+- name: Refresh systemd daemon
+  systemd:
+    daemon-reload: yes
+  when: django_uwsgi_socket_unit.changed or django_uwsgi_service_unit.changed
+
+- name: ensure the uwsgi sockets are enabled and started
+  systemd:
+    name: "{{ django_app_name }}-{{ item.name }}.socket"
+    enabled: yes
+    state: started
+  loop: "{{ django_uwsgi_services }}"

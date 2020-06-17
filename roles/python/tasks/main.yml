@@ -2,6 +2,7 @@
   apt_repository:
     repo: 'ppa:deadsnakes/ppa'
   register: python_repo
+  when: python_use_ppa|bool
 
 - name: update apt cache
   apt:
@@ -11,12 +12,9 @@
 - name: ensure python is installed
   apt:
     name:
-      - "python3-pip"
       - "python{{ python_version }}"
       - "python{{ python_version }}-dev"
+      - "python{{ python_version }}-venv"
     state: latest
-
-- name: install pipenv cause it might be useful
-  pip:
-    name: pipenv
-    executable: pip3
+    update_cache: yes
+    cache_valid_time: "{{apt_cache_valid_time | default (3600)}}"
