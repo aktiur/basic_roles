@@ -4,17 +4,12 @@
   register: python_repo
   when: python_use_ppa|bool
 
-- name: update apt cache
-  apt:
-    update_cache: yes
-  when: python_repo.changed
-
 - name: ensure python is installed
   apt:
     name:
       - "python{{ python_version }}"
       - "python{{ python_version }}-dev"
       - "python{{ python_version }}-venv"
-    state: latest
+    state: present
     update_cache: yes
-    cache_valid_time: "{{apt_cache_valid_time | default (3600)}}"
+    cache_valid_time: "{{ apt_cache_valid_time | default (3600) }}"

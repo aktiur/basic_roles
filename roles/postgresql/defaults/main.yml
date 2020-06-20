@@ -1,0 +1,115 @@
+# file: postgresql/defaults/main.yml
+
+# ------------------------------
+# DEBIAN CLUSTER INFORMATION
+# ------------------------------
+
+# leave it empty if you don't mind using the default version for you ubuntu distribution
+# if you want another version, you'll have to add an apt source
+postgresql_install_version: ''
+postgresql_cluster_name: "main"
+
+# ------------------------------
+# USERS
+# ------------------------------
+
+postgresql_cluster_user: "postgres"
+postgresql_cluster_group: "postgres"
+postgresql_default_database_owner: "{{ postgresql_cluster_user }}"
+# The user/group that will run postgresql process or service
+postgresql_service_enabled: true
+
+# ------------------------------
+# OPTIONS
+# ------------------------------
+postgresql_enabled: yes
+
+postgresql_ext_install_postgis: no
+postgresql_ext_postgis_version: "3"
+postgresql_ext_postgis_deps:
+  - libgeos-c1v5
+  - "postgresql-{{postgresql_version}}-postgis-{{postgresql_ext_postgis_version}}"
+  - "postgresql-{{postgresql_version}}-postgis-scripts"
+
+postgresql_additional_config: []
+
+# ------------------------------
+# DATABASES AND DATABASES USERS
+# ------------------------------
+
+# List of users to be created and their respective privileges (optional)
+#
+# Usage :
+# postgresql_users:
+#   - name: joe
+#     password: mega_secret
+#     # can use encrypted instead with md5 hash but do not use for security purposes
+#     role_attr_flags: CREATE_DB,CREATEROLE,LOGIN
+#     privileges:
+#       - db: app_data
+#         priv: CONNECT/TEMPORARY/user_table:SELECT/data_table:SELECT
+postgresql_users: []
+
+# List of databases to be created (optional)
+#
+# Usage:
+# postgresql_databases:
+#   - name: app_data
+#     owner: admin
+#
+postgresql_databases: []
+
+
+# ------------------------------
+# LOCALES
+# ------------------------------
+
+# uncomment these if you prefer not to use the default locale
+postgresql_encoding: 'UTF-8'
+postgresql_locale: "{{ ansible_env.LANG }}"
+
+# default collation and ctype
+postgresql_collation: "{{ postgresql_locale }}"
+# locale for system error message
+postgresql_lc_messages: "{{ postgresql_locale }}"
+# locale for monetary formatting
+postgresql_lc_monetary: "{{ postgresql_locale }}"
+# locale for number formatting
+postgresql_lc_numeric: "{{ postgresql_locale }}"
+# locale for time formatting
+postgresql_lc_time: "{{ postgresql_locale }}"
+
+postgresql_env:
+  LC_CTYPE: "{{ postgresql_lc_ctype }}"
+  LC_MESSAGES: "{{ postgresql_lc_messages }}"
+  LC_MONETARY: "{{ postgresql_lc_monetary }}"
+  LC_NUMERIC: "{{ postgresql_lc_numeric }}"
+  LC_TIME: "{{ postgresql_lc_time }}"
+
+# ------------------------------
+# AUTHENTICATION
+# ------------------------------
+
+postgresql_default_local_auth_method: "peer"
+postgresql_default_host_auth_method: "scram-sha-256"
+
+# pg_hba.conf
+postgresql_pg_hba_default:
+  - type: local
+    database: all
+    user: "{{ postgresql_cluster_user }}"
+    method: peer
+    comment: "Always allow {{ postgresql_cluster_user }} to connect through the unix socket"
+  - type: local
+    database: all
+    user: all
+    method: "{{ postgresql_default_local_auth_method }}"
+    comment: "Règle par défaut pour les connexions par le socket Unix"
+  - type: host
+    database: all
+    user: all
+    address: "127.0.0.1/24"
+    method: "{{ postgresql_default_host_auth_method }}"
+    comment: "Règle par défaut pour les connexions par TCP/IP sur localhost"
+
+postgresql_pg_hba_custom: []

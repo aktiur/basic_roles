@@ -17,6 +17,8 @@
   systemd:
     daemon-reload: yes
   when: django_celery_service_files.changed or django_celery_exporter.changed
+  tags:
+    - skip_ansible_lint # systemd daemon needs to be reloaded now
 
 - name: ensure the celery services are enabled and started
   systemd:

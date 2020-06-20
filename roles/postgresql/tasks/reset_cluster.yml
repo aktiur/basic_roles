@@ -1,0 +1,8 @@
+# Resetter le cluster
+
+- name: PostgreSQL | Reset the cluster - drop the existing one | Debian
+  command: pg_dropcluster --stop {{ postgresql_version }} {{ postgresql_cluster_name }}
+  become: yes
+  become_user: "{{ postgresql_service_user }}"
+  tags:
+    - skip_ansible_lint  # not idempotent, but need not be

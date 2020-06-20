@@ -1,0 +1,30 @@
+# file: postgresql/tasks/databases.yml
+
+- name: Databases | Ensure PostgreSQL is running
+  service:
+    name: "{{ postgresql_service_name }}"
+    state: started
+
+- name: Databases | Make sure the PostgreSQL databases are present
+  postgresql_db:
+    name: "{{ item.name }}"
+    owner: "{{ item.owner | default(postgresql_default_database_owner) }}"
+    encoding: "{{ item.encoding | default(postgresql_encoding) }}"
+    lc_collate: "{{ item.lc_collate | default(postgresql_collation) }}"
+    lc_ctype: "{{ item.lc_ctype | default(postgresql_collation) }}"
+    template: "template0"
+    state: present
+    login_user: "{{ postgresql_cluster_user }}"
+  become: yes
+  become_user: "{{ postgresql_cluster_user }}"
+  loop: "{{ postgresql_databases }}"
+  when: postgresql_databases|length > 0
+
+- name: Databases | Add extensions to the databases
+  postgresql_ext:
+    db: "{{ item.0.name }}"
+    name: "{{ item.1 }}"
+    login_user: "{{ postgresql_cluster_user }}"
+  become: yes
+  become_user: "{{ postgresql_cluster_user }}"
+  loop: "{{ postgresql_databases | subelements('extensions', skip_missing=True) }}"

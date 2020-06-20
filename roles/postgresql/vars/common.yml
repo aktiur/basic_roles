@@ -1,0 +1,2 @@
+postgresql_service_name: "postgresql@{{ postgresql_version }}-{{ postgresql_cluster_name }}.service"
+postgresql_start_conf_value: "{{ postgresql_enabled|ternary('auto', 'manual')}}"

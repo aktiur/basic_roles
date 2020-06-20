@@ -1,0 +1,90 @@
+# file: postgresql/tasks/configure.yml
+
+- name: Configure | Get uid for {{ postgresql_cluster_user }}
+  command: id -u "{{ postgresql_cluster_user }}"
+  changed_when: False
+  register: postgresql_cluster_uid
+
+# No choice but to use shell to get the GID
+- name: Configure | Get gid for {{ postgresql_cluster_group }}
+  shell: "set -o pipefail && \
+    getent group '{{ postgresql_cluster_group }}' | cut -d: -f3"
+  changed_when: False
+  register: postgresql_cluster_gid
+  tags:
+    - skip_ansible_lint
+
+- name: Configure | Ensure the locale for lc_collate and lc_ctype is generated | Debian
+  become: yes
+  locale_gen:
+    name: "{{ postgresql_collation }}"
+    state: present
+
+- name: Configure | Make sure cluster exists
+  command: pg_lsclusters -j {{ postgresql_version }} {{ postgresql_cluster_name|quote }}
+  register: cluster_info
+  changed_when: cluster_info.rc == 1
+  failed_when: cluster_info.rc not in [0, 1]
+
+- name: Configure | Create the cluster
+  shell: >
+    pg_createcluster --start --locale {{ postgresql_locale }}
+    -u "{{ postgresql_cluster_user }}" -g "{{ postgresql_cluster_group }}"
+    -e {{ postgresql_encoding }}
+    {{ postgresql_version }} {{ postgresql_cluster_name|quote }} >&2
+    && pg_lsclusters -j
+  become: yes
+  register: new_cluster_info
+  when: cluster_info.changed
+  tags:
+    - skip_ansible_lint  # avoid 'should be handler' warning
+
+- name: Configure | Establish cluster information
+  set_fact:
+    postgresql_cluster: "{{ new_cluster_info.stdout|default(cluster_info.stdout) | from_json | first }}"
+
+- name: Configure | Fail if we could not get cluster information
+  fail:
+    msg: pg_lsclusters output was incorrect
+  when: postgresql_version != postgresql_cluster.version or postgresql_cluster_name != postgresql_cluster.cluster
+
+- name: Configure | Fail if cluster owner and group do not match
+  fail:
+    msg: >
+      Cluster {{ postgresql_version }} {{ postgresql_cluster_name }} already exists but is owned
+      by another user/group than {{ postgresql_cluster_user }}/{{ postgresql_cluster_group }}
+  when: >
+    postgresql_cluster.owneruid|int != postgresql_cluster_uid.stdout|int or
+    postgresql_cluster.ownergid|int != postgresql_cluster_gid.stdout|int
+
+- name: Configure | Update auth configuration
+  template:
+    src: pg_hba.conf.j2
+    dest: "{{ postgresql_cluster.config.hba_file }}"
+    owner: "{{ postgresql_cluster_user }}"
+    group: "{{ postgresql_cluster_group }}"
+    mode: 0640
+  register: postgresql_configuration_auth
+
+- name: Configure | {{ postgresql_service_enabled | ternary('Enable', 'Disable') }} cluster
+  replace:
+    path: "{{ postgresql_cluster.configdir }}/start.conf"
+    regexp: "^{{ postgresql_cluster.start }}"
+    replace: "{{ postgresql_start_conf_value }}"
+  when: "postgresql_cluster.start != postgresql_start_conf_value"
+  register: postgresql_configuration_enabled
+
+- name: Configure | Reload systemd
+  systemd:
+    daemon_reload: yes
+  when: new_cluster_info.changed or postgresql_configuration_enabled.changed
+  tags:
+    - skip_ansible_lint  # avoid 'should be handler' warning
+
+- name: Configure | Restart PostgreSQL
+  service:
+    name: "{{ postgresql_service_name }}"
+    state: restarted
+  when: postgresql_configuration_auth.changed
+  tags:
+    - skip_ansible_lint  # avoid 'should be handler' warning

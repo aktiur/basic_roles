@@ -1,0 +1,31 @@
+- name: General | Import release-specific variables
+  include_vars:
+    file: "{{ ansible_distribution_release }}.yml"
+
+- name: General | Import common variables
+  include_vars:
+    file: common.yml
+  tags: [postgresql]
+
+- name: General | Make sure role dependencies are installed
+  apt:
+    name:
+      - "python{{ system_python_version }}-psycopg2"
+      - "locales"
+      - "libjson-perl"
+    state: present
+    update_cache: yes
+    cache_valid_time: "{{ apt_cache_valid_time | default (3600) }}"
+  tags: [postgresql]
+
+- import_tasks: install.yml
+  tags: [postgresql]
+
+- import_tasks: configure.yml
+  tags: [postgresql]
+
+- import_tasks: users.yml
+  tags: [postgresql]
+
+- import_tasks: databases.yml
+  tags: [postgresql]

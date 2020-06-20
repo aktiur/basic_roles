@@ -1,0 +1,1 @@
+postgresql_version: "{{ postgresql_install_version | default('10', True) }}"

@@ -1,15 +1,18 @@
 - name: Ensure certbot is installed
   apt:
     name: certbot
-    state: latest
+    state: present
     update_cache: yes
-    cache_valid_time: "{{apt_cache_valid_time | default (3600)}}"
+    cache_valid_time: "{{ apt_cache_valid_time | default (3600) }}"
 
 - name: Create letsencrypt webroot directory
   file: path=/var/www/letsencrypt state=directory mode=0755
 
 - name: Generate certificates
-  command: "certbot certonly --webroot -w /var/www/letsencrypt --cert-name {{ letsencrypt_domains[0] }} --expand -d {{ letsencrypt_domains | join(',') }} -m {{ letsencrypt_email }} -n --agree-tos"
+  command: "certbot certonly --webroot -w /var/www/letsencrypt\
+    --cert-name {{ letsencrypt_domains[0] }} --expand \
+      -d {{ letsencrypt_domains | join(',') }} \
+        -m {{ letsencrypt_email }} -n --agree-tos"
   register: certbot
   changed_when: "'no action taken.' not in certbot.stdout"
 

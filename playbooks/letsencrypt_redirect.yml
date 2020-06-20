@@ -1,0 +1,52 @@
+- name: Set up nginx redirection on source {{ source }}
+  hosts: "{{ source }}"
+
+  tasks:
+    - name: Fail if required variables are not defined
+      fail:
+        msg: Set up both 'source' and 'destination'
+      when: source is not defined or destination is not defined
+    - name: Replace letsencrypt.conf file
+      template:
+        src: letsencrypt_redirect.conf.j2
+        dest: /etc/nginx/includes/letsencrypt.conf
+    - name: Reload nginx to take that change into account
+      service:
+        name: nginx
+        state: reloaded
+
+- name: Generate certificates on destination {{ destination }}
+  hosts: "{{ destination }}"
+
+  handlers:
+    - import_tasks: roles/nginx/handlers/main.yml
+
+  tasks:
+    - name: Allow connections from source {{ source }} on 80
+      ufw:
+        rule: allow
+        direction: in
+        from_ip: "{{ hostvars[source]['ansible_host'] }}"
+        to_port: "80"
+    - import_role:
+        name: common
+    - name: Remove firewall rule
+      ufw:
+        delete: yes
+        rule: allow
+        direction: in
+        from_ip: "{{ hostvars[source]['ansible_host'] }}"
+        to_port: "80"
+
+- name: Remove redirection on source {{ source }}
+  hosts: "{{ source }}"
+
+  tasks:
+    - name: Reset letsencrypt include file
+      copy:
+        src: roles/nginx/files/letsencrypt.conf
+        dest: /etc/nginx/includes/letsencrypt.conf
+    - name: Reload nginx to take that change into account
+      service:
+        name: nginx
+        state: reloaded

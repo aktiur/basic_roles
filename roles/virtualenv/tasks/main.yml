@@ -1,0 +1,36 @@
+- name: Fail if required parameters are not defined
+  fail:
+    msg: "You have to define at least one of 'virtualenv_requirements_txt', 'virtualenv_pipfile_directory' or 'virtualenv_packages'"
+  when: virtualenv_requirements_txt is undefined and virtualenv_pipfile_directory is undefined and virtualenv_packages is undefined
+
+- name: Update from requirements.txt
+  pip:
+    state: present
+    virtualenv: "{{ virtualenv_directory }}"
+    virtualenv_command: "/usr/bin/python{{ python_version }} -m venv"
+    requirements: "{{ virtualenv_requirements_txt }}"
+  when: virtualenv_requirements_txt is defined
+
+- name: make sure pipenv is present
+  pip:
+    name: pipenv
+    state: present
+    virtualenv: "{{ virtualenv_directory }}"
+    virtualenv_command: "/usr/bin/python{{ python_version }} -m venv"
+  when: virtualenv_pipfile_directory is defined
+
+- name: update from Pipfile.lock
+  command: "{{ virtualenv_directory }}/bin/pipenv sync --bare{% if virtualenv_pipenv_install_dev %} --dev{% endif %}"
+  args:
+    chdir: "{{ virtualenv_pipfile_directory }}"
+  environment:
+    VIRTUAL_ENV: "{{ virtualenv_directory }}"
+  when: virtualenv_pipfile_directory is defined
+
+- name: make sure listed packages are present
+  pip:
+    name: "{{ virtualenv_packages }}"
+    state: present
+    virtualenv: "{{ virtualenv_directory }}"
+    virtualenv_command: "/usr/bin/python{{ python_version }} -m venv"
+  when: virtualenv_packages is defined

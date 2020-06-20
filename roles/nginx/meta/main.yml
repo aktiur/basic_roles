@@ -1,0 +1,12 @@
+galaxy_info:
+  role_name: nginx
+  description: Installe et configure le serveur HTTP nginx
+  author: Jill Royer & Arthur Cheysson
+  platforms:
+    - name: Ubuntu
+      versions:
+        - xenial
+        - bionic
+        - eoan
+  license: GPL-3.0-only
+  min_ansible_version: 2.6

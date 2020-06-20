@@ -1,0 +1,14 @@
+# file: postgresql/tasks/users_privileges.yml
+
+- name: Users privileges | Update the user privileges
+  postgresql_user:
+    name: "{{ item.0.name }}"
+    db: "{{ item.1.db | default(omit) }}"
+    priv: "{{ item.1.priv | default(omit) }}"
+    state: present
+    login_user: "{{ postgresql_admin_user }}"
+    role_attr_flags: "{{ item.role_attr_flags | default(omit) }}"
+  become: yes
+  become_user: "{{ postgresql_admin_user }}"
+  loop: "{{ postgresql_user | subelements(privileges, skip_missing=True) }}"
+  when: postgresql_users|length > 0

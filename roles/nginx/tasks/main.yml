@@ -10,7 +10,7 @@
       - nginx-extras
     state: present
     update_cache: yes
-    cache_valid_time: "{{apt_cache_valid_time | default (3600)}}"
+    cache_valid_time: "{{ apt_cache_valid_time | default (3600) }}"
 
 - name: Ensure dhparams are present
   copy:
@@ -70,9 +70,13 @@
     src: ../sites-available/99-letsencrypt.conf
     state: link
 
+# nginx must be reloaded now in case an ACME challenge is made in the same playbook
+# to get a certificate
 - name: Reload nginx for letsencrypt
   service: name=nginx state=reloaded
   when: letsencrypt_includes.changed or letsencrypt_conf.changed
+  tags:
+    - skip_ansible_lint
 
 - name: Copy additional nginx.service configuration
   copy:
@@ -88,9 +92,9 @@
 - name: Ensure goaccess is available
   apt:
     name: goaccess
-    state: latest
+    state: present
     update_cache: yes
-    cache_valid_time: "{{apt_cache_valid_time | default (3600)}}"
+    cache_valid_time: "{{ apt_cache_valid_time | default (3600) }}"
 
 - name: Ensure goaccess config file is present
   copy:

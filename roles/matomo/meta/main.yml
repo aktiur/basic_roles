@@ -1,0 +1,12 @@
+galaxy_info:
+  role_name: matomo
+  description: Installe un serveur Matomo pour mesurer l'audience de votre site
+  author: Jill Royer
+  platforms:
+    - name: Ubuntu
+      versions:
+        - xenial
+        - bionic
+        - eoan
+  license: GPL-3.0-only
+  min_ansible_version: 2.6
