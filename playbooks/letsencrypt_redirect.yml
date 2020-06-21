@@ -6,6 +6,8 @@
       fail:
         msg: Set up both 'source' and 'destination'
       when: source is not defined or destination is not defined
+    - name: Backup letsencrypt.conf file
+      command: cp /etc/nginx/includes/letsencrypt.conf /etc/nginx/includes/letsencrypt.conf.bak
     - name: Replace letsencrypt.conf file
       template:
         src: letsencrypt_redirect.conf.j2
@@ -19,7 +21,9 @@
   hosts: "{{ destination }}"
 
   handlers:
-    - import_tasks: roles/nginx/handlers/main.yml
+    - name: reload systemd
+      systemd:
+        reload-daemon: yes
 
   tasks:
     - name: Allow connections from source {{ source }} on 80
@@ -29,7 +33,9 @@
         from_ip: "{{ hostvars[source]['ansible_host'] }}"
         to_port: "80"
     - import_role:
-        name: common
+        name: nginx
+    - import_role:
+        name: nginx_letsencrypt
     - name: Remove firewall rule
       ufw:
         delete: yes
@@ -43,9 +49,7 @@
 
   tasks:
     - name: Reset letsencrypt include file
-      copy:
-        src: roles/nginx/files/letsencrypt.conf
-        dest: /etc/nginx/includes/letsencrypt.conf
+      command: cp /etc/nginx/includes/letsencrypt.conf.bak /etc/nginx/includes/letsencrypt.conf
     - name: Reload nginx to take that change into account
       service:
         name: nginx

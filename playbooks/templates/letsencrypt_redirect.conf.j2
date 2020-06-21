@@ -1,0 +1,17 @@
+# {{ ansible_managed }}
+# helper include for letsencrypt ACME challenge
+#
+# This helper allow to process an ACME challenge on a second server
+# for which no DNS record has been set, for example because it is
+# not yet in production.
+
+location /.well-known/ {
+  root /var/www/letsencrypt/;
+  try_files $uri @le_alt;
+  satisfy any;
+  allow all;
+}
+
+location @le_alt {
+  proxy_pass http://{{ hostvars[destination]['ansible_host'] }}$uri;
+}

@@ -10,13 +10,19 @@ Ces rôles permettent la configuration de serveurs sous Ubuntu.
   des logs, firewall, fail2ban, outils de diagnostic)
 
 ## Rôles web
-- nginx
-- letsencrypt
-- geoip
-- django
-- php
+- nginx: install nginx
+- nginx_letsencrypt: crée un certificat pour nginx
+- django: installe une application django
+- matomo: un serveur d'analytiques web
 
 ## Rôles de base de données
 
 - mariadb
 - postgresql
+- redis
+
+## Rôles langage
+
+- python
+- php
+- virtualenv

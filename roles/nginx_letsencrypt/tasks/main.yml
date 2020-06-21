@@ -9,7 +9,7 @@
   file: path=/var/www/letsencrypt state=directory mode=0755
 
 - name: Generate certificates
-  command: "certbot certonly --webroot -w /var/www/letsencrypt\
+  command: "certbot certonly --webroot -w /var/www/letsencrypt \
     --cert-name {{ letsencrypt_domains[0] }} --expand \
       -d {{ letsencrypt_domains | join(',') }} \
         -m {{ letsencrypt_email }} -n --agree-tos"

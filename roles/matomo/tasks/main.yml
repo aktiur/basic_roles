@@ -10,6 +10,13 @@
     dest: "{{ php_conf_directory }}/fpm/pool.d/matomo.conf"
   notify: reload php-fpm
 
+- name: Set up matomo special mariadb conf
+  copy:
+    src: 60-matomo_tuning.cnf
+    dest: /etc/mysql/mariadb.conf.d/60-matomo_tuning.cnf
+  notify:
+    - reload mariadb
+
 - name: Create databases for sites
   mysql_db:
     name: matomo

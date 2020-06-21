@@ -6,10 +6,3 @@
       - python{{ system_python_version }}-mysqldb
     update_cache: yes
     cache_valid_time: "{{ apt_cache_valid_time | default (3600) }}"
-
-- name: Set up matomo special mariadb conf
-  copy:
-    src: 60-matomo_tuning.cnf
-    dest: /etc/mysql/mariadb.conf.d/60-matomo_tuning.cnf
-  notify:
-    - reload mariadb

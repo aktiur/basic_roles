@@ -1,0 +1,1 @@
+system_python_version: "{{ (ansible_distribution_release == 'focal') | ternary('3', '') }}"
