@@ -7,7 +7,6 @@
   tags:
     - provision
 
-
 - import_tasks: django.yml
   tags:
     - deploy

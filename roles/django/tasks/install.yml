@@ -24,9 +24,6 @@
     dest: "/usr/local/bin/{{ django_app_name }}-manage"
     mode: 0755
 
-- import_role:
-    name: virtualenv
-
 - import_tasks: uwsgi.yml
   when: django_uwsgi_services|length > 0
 

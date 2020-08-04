@@ -25,6 +25,3 @@
     group: "{{ django_group }}"
   notify:
     - django app changed
-  tags:
-    - provision
-    - deploy

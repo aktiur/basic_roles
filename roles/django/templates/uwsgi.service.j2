@@ -17,6 +17,9 @@ KillSignal=SIGQUIT
 Type=notify
 NotifyAccess=all
 EnvironmentFile={{ django_env_file|quote }}
+{% for var, value in item.env.items() %}
+Environment="{{ var }}={{ value }}"
+{% endfor %}
 
 {% if item.systemd_service_config|default("") %}
 # Beginning of service custom config
