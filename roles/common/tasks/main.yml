@@ -8,6 +8,14 @@
     msg: You need to use one of the supported releases
   when: ansible_distribution_release not in supported_releases
 
+- name: Ensure sudoers file is present
+  copy:
+    src: sudoers
+    dest: /etc/sudoers
+    owner: root
+    group: root
+    mode: 0440
+
 - name: Ensure essentials packages are installed
   apt:
     name:
@@ -21,6 +29,7 @@
       - unzip
       - net-tools
       - ufw
+      - sudo
     update_cache: yes
     cache_valid_time: "{{ apt_cache_valid_time | default (3600) }}"
 
@@ -137,3 +146,26 @@
       - nload
     update_cache: yes
     cache_valid_time: "{{ apt_cache_valid_time | default (3600) }}"
+
+- name: create google fonts directory
+  file:
+    path: /usr/share/fonts/google/
+    state: directory
+
+- name: downlad required google fonts
+  get_url:
+    url: https://fonts.google.com/download?family={{ required_fonts | join('|') | urlencode }}
+    dest: /var/google_fonts.zip
+  when: required_fonts|length > 0
+
+- name: unpack google fonts
+  unarchive:
+    src: /var/google_fonts.zip
+    dest: /usr/share/fonts/google/
+    remote_src: yes
+  register: fonts_copied
+  when: required_fonts|length > 0
+
+- name: update font cache
+  command: fc-cache
+  when: required_fonts|length > 0 and fonts_copied.changed
