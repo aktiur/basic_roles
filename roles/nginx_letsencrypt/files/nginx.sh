@@ -1,3 +1,2 @@
 #!/bin/sh
-# {{ ansible_managed }}
-systemctl nginx reload
+systemctl reload nginx
