@@ -11,7 +11,8 @@
 - name: Install hook for nginx reload
   copy:
     src: nginx.sh
-    dest: /etc/letsencrypt/renewal-hooks/deploy/nginx.sh
+    dest: /etc/letsencrypt/renewal-hooks/post/nginx.sh
+    mode: 0755
 
 - name: Generate certificates
   command: "certbot certonly --webroot -w /var/www/letsencrypt \
