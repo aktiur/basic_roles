@@ -17,7 +17,7 @@ KillSignal=SIGQUIT
 Type=notify
 NotifyAccess=all
 EnvironmentFile={{ django_env_file|quote }}
-{% for var, value in item.env.items() %}
+{% for var, value in (item.env|default({})).items() %}
 Environment="{{ var }}={{ value }}"
 {% endfor %}
 

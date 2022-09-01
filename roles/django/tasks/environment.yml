@@ -15,6 +15,11 @@
     state: directory
     owner: "{{ django_user }}"
     group: "{{ django_group }}"
+- name: ensure we have a django secret
+  host_secret:
+    name: django_secret
+    params: length=32 chars=ascii_letters,digits
+  when: django_secret is not defined
 
 - name: ensure env file is up to date
   template:
