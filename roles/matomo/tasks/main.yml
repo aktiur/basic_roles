@@ -62,14 +62,14 @@
 - name: Ensure the cron task for archiving is installed
   cron:
     name: matomo
-    user: root
+    user: "{{ matomo_user }}"
     minute: "*/5"
     job: php /var/www/matomo/matomo/console core:archive -q
 
 - name: Ensure the cron task for optimizing is installed
   cron:
     name: matomo-optimize
-    user: root
+    user: "{{ matomo_user }}"
     minute: 0
     hour: 6
     day: 1
