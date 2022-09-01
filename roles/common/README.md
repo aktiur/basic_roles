@@ -17,7 +17,9 @@ nginx, letsencrypt and ssmtp roles.
 
 ## Variables
 
-| name                 | default | description                                   |
-|----------------------|---------|-----------------------------------------------|
-| cloudflare_protected | no      | if yes, remove fail2ban instead of installing |
-| required_fonts       | []      | google fonts that need to be downloaded       |
+| name                   | default | description                                    |
+|------------------------|---------|------------------------------------------------|
+| cloudflare_protected   | no      | if yes, remove fail2ban instead of installing  |
+| locales                | []      | list of locales to set up                      |
+| google_fonts_required  | []      | list of google fonts that need to be installed |
+| google_fonts_directory |         | directory where to install google fonts        |

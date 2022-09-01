@@ -104,23 +104,35 @@
   notify:
     - restart journald
 
+
+# Dans sa séquence d'initialisation, UFW fait un truc un peu bête : il règle la
+# politique par défaut *avant* d'avoir inséré la règle qui autorise les paquets
+# appartenant à des connexions déjà ouvertes.
+#
+# Résultat, si on met la politique par défaut à DENY, le changement de politique
+# se met à bloquer la connexion des disques réseaux, ce qui coupe les connexions
+# déjà existantes… et notamment celles aux disques réseau, ce qui fait planter le
+# boot.
+#
+# Du coup, comme workaround, on indique comme politique par défaut ALLOW, mais
+# on rajoute à la chaîne qu'UFW utilise comme post-traitement pour les paquets
+# entrants une règle qui droppe tout, dans un fichier que UFW charge *après*
+# avoir créé la règle qui autorise les paquets des connexions ouvertes.
+#
+# On retrouve donc bien le comportement souhaité, avec l'inconvénient majeur que
+# rien de tout cela n'est directement visible dans l'interface de UFW qui
+# affiche simplement que la politique par défaut est ALLOW.
+
+- name: ufw default allow not to block nbd
+  ufw:
+    policy: allow
+
 - name: ufw allow ssh
   ufw:
     rule: allow
     port: "22"
 
-# When ufw starts, it sets up the default policy before configuring any other
-# rules. That includes the usual rule that accepts packets from already
-# established connections. It means that connections with network devices will
-# instantly get dropped, which on a VM with no local disk means the VM will
-# freeze. To drop every incoming connection by default, we thus cannot use the
-# default policy, but instead must use a custom rule that drops everything.
-
-- name: ufw drop incoming connections by default (p.1)
-  ufw:
-    policy: allow
-
-- name: ufw drop incoming connections by default (p.2)
+- name: ufw drop all packets in "after rules"
   lineinfile:
     path: /etc/ufw/after{{ item }}.rules
     line: "-A ufw{{ item }}-reject-input -j DROP"
@@ -149,23 +161,23 @@
 
 - name: create google fonts directory
   file:
-    path: /usr/share/fonts/google/
+    path: "{{ google_fonts_directory }}"
     state: directory
 
 - name: downlad required google fonts
   get_url:
     url: https://fonts.google.com/download?family={{ required_fonts | join('|') | urlencode }}
-    dest: /var/google_fonts.zip
-  when: required_fonts|length > 0
+    dest: /tmp/google_fonts.zip
+  when: google_fonts_required|length > 0
 
 - name: unpack google fonts
   unarchive:
-    src: /var/google_fonts.zip
-    dest: /usr/share/fonts/google/
+    src: /tmp/google_fonts.zip
+    dest: "{{ google_fonts_directory }}"
     remote_src: yes
   register: fonts_copied
-  when: required_fonts|length > 0
+  when: google_fonts_required|length > 0
 
 - name: update font cache
   command: fc-cache
-  when: required_fonts|length > 0 and fonts_copied.changed
+  when: google_fonts_required|length > 0 and fonts_copied.changed
