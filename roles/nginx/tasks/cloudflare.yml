@@ -2,13 +2,22 @@
   get_url:
     url: "https://www.cloudflare.com/ips-v{{ item }}"
     dest: "/etc/cloudflare_ip{{ item }}"
-  loop: ["4", "6"]
+  loop: [4, 6]
 
 - name: Slurps Cloudfare IPs
   slurp:
     src: "/etc/cloudflare_ip{{ item }}"
-  register: cloudfare_ips
-  loop: ["4", "6"]
+  register: cloudflare_ips_files
+  loop: [4, 6]
+
+- name: Establish complete list of Cloudflare IPs
+  set_fact:
+    cloudflare_ips: "{{ ((cloudflare_ips_files.results.0.content|b64decode).split() + (cloudflare_ips_files.results.1.content|b64decode).split()) }}"
+
+- name: Configure nginx to trust Cloudflare CF-Connecting-IP header
+  template:
+    src: "cloudflare.conf.j2"
+    dest: "/etc/nginx/conf.d/cloudflare.conf"
 
 - name: Allow 443 and 80 from all Cloudflare IPs
   ufw:
@@ -16,7 +25,7 @@
     direction: in
     from_ip: "{{ item.0 }}"
     to_port: "{{ item.1 }}"
-  loop: "{{ ((cloudfare_ips.results.0.content|b64decode).split() + (cloudfare_ips.results.1.content|b64decode).split()) | product(['443', '80']) | list }}"
+  loop: "{{ cloudflare_ips | product([443, 80]) | list }}"
 
 - name: Allow 443 and 80 from local IPs
   ufw:
@@ -32,8 +41,7 @@
     direction: in
     from_ip: "{{ hostvars[item]['ansible_host'] }}/32"
     to_port: "443"
-  loop: "{{ groups['monitoring'] }}"
-
+  loop: "{{ groups['monitoring'] | default([]) }}"
 
 - name: Disallow 443 and 80 from everyone else
   ufw:

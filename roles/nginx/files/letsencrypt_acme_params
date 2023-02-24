@@ -1,0 +1,11 @@
+# helper include for letsencrypt ACME challenge
+#
+# should be included in every server for which a letsencrypt certificate
+# need to be created.
+
+location ~ /.well-known {
+  root /var/www/letsencrypt/;
+  try_files $uri =404;
+  satisfy any;
+  allow all;
+}
