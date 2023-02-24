@@ -1,23 +1,30 @@
+---
 - name: Check we are on Ubuntu release
-  fail:
+  ansible.builtin.fail:
     msg: You need to use Ubuntu Server
   when: ansible_distribution != "Ubuntu"
 
 - name: Check we are on correct release
-  fail:
+  ansible.builtin.fail:
     msg: You need to use one of the supported releases
   when: ansible_distribution_release not in supported_releases
 
 - name: Ensure sudoers file is present
-  copy:
+  ansible.builtin.copy:
     src: sudoers
     dest: /etc/sudoers
     owner: root
     group: root
-    mode: 0440
+    mode: "0440"
+
+- name: Upgrade apt packages
+  ansible.builtin.apt:
+    upgrade: dist
+    update_cache: true
+    cache_valid_time: "{{ apt_cache_valid_time | default(3600) }}"
 
 - name: Ensure essentials packages are installed
-  apt:
+  ansible.builtin.apt:
     name:
       - build-essential
       - python{{ system_python_version }}-pip
@@ -30,15 +37,11 @@
       - net-tools
       - ufw
       - sudo
-    update_cache: yes
-    cache_valid_time: "{{ apt_cache_valid_time | default (3600) }}"
 
 - name: Ensure packages specific to bionic and forward are installed
-  apt:
+  ansible.builtin.apt:
     name:
       - rsyslog
-    update_cache: yes
-    cache_valid_time: "{{ apt_cache_valid_time | default (3600) }}"
   when: ansible_distribution_release != 'xenial'
 
 - name: Ensure additional filesystems are mounted
@@ -46,65 +49,64 @@
     state: mounted
     src: "{{ item.src }}"
     path: "{{ item.path }}"
-    fstype: "{{ item.fstype|default('ext4') }}"
+    fstype: "{{ item.fstype | default('ext4') }}"
   loop: "{{ mounts }}"
 
 - name: Ensure required locales are installed
-  locale_gen:
+  community.general.locale_gen:
     name: "{{ item }}"
     state: present
   with_items: "{{ locales }}"
 
 - name: Ensure default locale is set
-  lineinfile:
+  ansible.builtin.lineinfile:
     path: /etc/default/locale
     regexp: "^LANG="
     line: "LANG={{ default_locale }}"
   when: default_locale is defined
 
-- name: Upgrade apt packages
-  apt:
-    upgrade: dist
-    update_cache: yes
-    cache_valid_time: "{{ apt_cache_valid_time | default (3600) }}"
-
-- name: ensure system wide known hosts file exists
-  file:
+- name: Ensure system wide known hosts file exists
+  ansible.builtin.file:
     path: /etc/ssh/ssh_known_hosts
     state: touch
     owner: root
     group: root
-    mode: 0644
+    mode: "0644"
     modification_time: preserve
     access_time: preserve
 
-- name: ensure github is in known hosts
-  lineinfile:
+- name: Ensure github is in known hosts
+  ansible.builtin.lineinfile:
     path: /etc/ssh/ssh_known_hosts
     regexp: "^github.com "
-    line: "github.com ssh-rsa AAAAB3NzaC1yc2EAAAABIwAAAQEAq2A7hRGmdnm9tUDbO9IDSwBK6TbQa+PXYPCPy6rbTrTtw7PHkccKrpp0yVhp5HdEIcKr6pLlVDBfOLX9QUsyCOV0wzfjIJNlGEYsdlLJizHhbn2mUjvSAHQqZETYP81eFzLQNnPHt4EVVUh7VfDESU84KezmD5QlWpXLmvU31/yMf+Se8xhHTvKSCZIFImWwoG6mbUoWf9nzpIoaSjB+weqqUUmpaaasXVal72J+UX2B+2RPW3RcT0eOzQgqlJL3RKrTJvdsjE3JEAvGq3lGHSZXy28G3skua2SmVi/w4yCE6gbODqnTWlg7+wC604ydGXA8VJiS5ap43JXiUFFAaQ=="
+    line: "github.com ssh-rsa AAAAB3NzaC1yc2EAAAABIwAAAQEAq2A7hRGmdnm9tUDbO9IDS\
+      wBK6TbQa+PXYPCPy6rbTrTtw7PHkccKrpp0yVhp5HdEIcKr6pLlVDBfOLX9QUsyCOV0wzfjIJ\
+      NlGEYsdlLJizHhbn2mUjvSAHQqZETYP81eFzLQNnPHt4EVVUh7VfDESU84KezmD5QlWpXLmvU\
+      31/yMf+Se8xhHTvKSCZIFImWwoG6mbUoWf9nzpIoaSjB+weqqUUmpaaasXVal72J+UX2B+2RP\
+      W3RcT0eOzQgqlJL3RKrTJvdsjE3JEAvGq3lGHSZXy28G3skua2SmVi/w4yCE6gbODqnTWlg7+\
+      wC604ydGXA8VJiS5ap43JXiUFFAaQ=="
 
-- name: "ensure fail2ban is {{ cloudflare_protected | bool | ternary('absent', 'present') }}"
-  apt:
+- name: "Ensure fail2ban is {{ cloudflare_protected | bool | \
+    ternary('absent', 'present') }}"
+  ansible.builtin.apt:
     name: fail2ban
     state: "{{ cloudflare_protected | bool | ternary('absent', 'present') }}"
-    update_cache: yes
-    cache_valid_time: "{{ apt_cache_valid_time | default (3600) }}"
 
-- name: ensure nginx is enabled in fail2ban
-  copy:
+- name: Ensure nginx is enabled in fail2ban
+  ansible.builtin.copy:
     src: fail2ban_nginx.conf
     dest: /etc/fail2ban/jail.d/nginx.conf
+    mode: "0644"
   notify:
     - restart fail2ban
   when: not cloudflare_protected | bool
 
-- name: ensure journal directory is created so that logs are persisted
-  file:
+- name: Ensure journal directory is created so that logs are persisted
+  ansible.builtin.file:
     path: /var/log/journal
     state: directory
     group: systemd-journal
-    mode: 02755
+    mode: "02755"
   notify:
     - restart journald
 
@@ -115,8 +117,8 @@
 #
 # Résultat, si on met la politique par défaut à DENY, le changement de politique
 # se met à bloquer la connexion des disques réseaux, ce qui coupe les connexions
-# déjà existantes… et notamment celles aux disques réseau, ce qui fait planter le
-# boot.
+# déjà existantes… et notamment celles aux disques réseau, ce qui fait planter
+# le boot.
 #
 # Du coup, comme workaround, on indique comme politique par défaut ALLOW, mais
 # on rajoute à la chaîne qu'UFW utilise comme post-traitement pour les paquets
@@ -127,17 +129,17 @@
 # rien de tout cela n'est directement visible dans l'interface de UFW qui
 # affiche simplement que la politique par défaut est ALLOW.
 
-- name: ufw default allow not to block nbd
-  ufw:
+- name: Ensure ufw default allow not to block nbd
+  community.general.ufw:
     policy: allow
 
-- name: ufw allow ssh
-  ufw:
+- name: Ensure ufw allow ssh
+  community.general.ufw:
     rule: allow
     port: "22"
 
-- name: ufw drop all packets in "after rules"
-  lineinfile:
+- name: Ensure ufw drop all packets in "after rules"
+  ansible.builtin.lineinfile:
     path: /etc/ufw/after{{ item }}.rules
     line: "-A ufw{{ item }}-reject-input -j DROP"
     insertbefore: COMMIT
@@ -145,12 +147,12 @@
     - ''
     - '6'
 
-- name: enable ufw
-  ufw:
+- name: Enable ufw
+  community.general.ufw:
     state: enabled
 
-- name: ensure diagnostic tools are installed
-  apt:
+- name: Ensure diagnostic tools are installed
+  ansible.builtin.apt:
     name:
       - mtr
       - knot-dnsutils
@@ -160,28 +162,30 @@
       - vnstat
       - hping3
       - nload
-    update_cache: yes
-    cache_valid_time: "{{ apt_cache_valid_time | default (3600) }}"
 
-- name: create google fonts directory
-  file:
+- name: Create google fonts directory
+  ansible.builtin.file:
     path: "{{ google_fonts_directory }}"
     state: directory
+    mode: "0755"
 
-- name: downlad required google fonts
-  get_url:
-    url: https://fonts.google.com/download?family={{ required_fonts | join('|') | urlencode }}
+- name: Downlad required google fonts
+  ansible.builtin.get_url:
+    url: "https://fonts.google.com/download?family=\
+      {{ required_fonts | join('|') | urlencode }}"
     dest: /tmp/google_fonts.zip
+    mode: "0644"
   when: google_fonts_required|length > 0
 
-- name: unpack google fonts
-  unarchive:
+- name: Unpack google fonts
+  ansible.builtin.unarchive:
     src: /tmp/google_fonts.zip
     dest: "{{ google_fonts_directory }}"
-    remote_src: yes
+    remote_src: true
   register: fonts_copied
   when: google_fonts_required|length > 0
 
-- name: update font cache
-  command: fc-cache
+- name: Update font cache
+  ansible.builtin.command: fc-cache
+  changed_when: true
   when: google_fonts_required|length > 0 and fonts_copied.changed

@@ -1,6 +1,6 @@
 ---
 # Define at least:
-# django_app_name: app slug (will be used in services file names, and command names)
+# django_app_name: app slug (used in services file names, and command names)
 # django_domain: app domain name
 # django_main_package: the package where are settings.py and uwsi.py
 
@@ -17,20 +17,20 @@ django_python: "{{ virtualenv_directory }}/bin/python"
 django_dotenv: "{{ virtualenv_directory }}/bin/dotenv"
 django_uwsgi: "{{ virtualenv_directory }}/bin/uwsgi"
 
-#-----------------------------------------------------------------------
-# Source locations
-#-----------------------------------------------------------------------
+########################################
+# Source
+########################################
 
 # Where is the manage script found ?
-django_manage_file: "{{ django_src_directory|mandatory }}/manage.py"
+django_manage_file: "{{ django_src_directory | mandatory }}/manage.py"
 
 # Where are the settings and wsgi modules found
-django_settings_module: "{{ django_main_package|mandatory }}.settings"
-django_wsgi_module: "{{ django_main_package|mandatory }}.wsgi"
+django_settings_module: "{{ django_main_package | mandatory }}.settings"
+django_wsgi_module: "{{ django_main_package | mandatory }}.wsgi"
 
-#-----------------------------------------------------------------------
+########################################
 # Directories and script locations
-# ----------------------------------------------------------------------
+########################################
 
 # Set up the main directory where everything will be installed
 django_directory: "/srv/{{ django_app_name }}"
@@ -44,8 +44,8 @@ virtualenv_packages:
   - uwsgi
   - ipython
 
-# Set up where the static files will be collected, and where medias will be found
-# and uploaded
+# Set up where the static files will be collected, and where medias will be
+# found and uploaded
 django_static_directory: "{{ django_directory }}/static"
 django_media_directory: "{{ django_directory }}/media"
 
@@ -56,24 +56,28 @@ django_env_file: "{{ django_directory }}/env"
 django_uwsgi_log_directory: /var/log/{{ django_app_name }}-django
 
 
-#------------------------------------------------------------------------
+########################################
 # Configuration
-#------------------------------------------------------------------------
+########################################
 
 # Whether to install nginx server entries for the uwsgi services
-django_nginx_conf: yes
+django_nginx_conf: true
 
 # Whether to install utility scripts to execute django commands and get a shell
-django_install_django_shell: yes
-django_install_manage: yes
+django_install_django_shell: true
+django_install_manage: true
 
 # UWSGI services to create and start
 # By default, one service is created
-# Each service is a hash with at least a name property. These additional properties may be
-# defined:
-# - runtime_directories: directories created by systemd in /run when the service is started, and cleaned when it stops
-# - systemd_service_config: additional systemd service configuration that will be copied to the unit file
-# - uwsgi_config: additional uwsgi configuration that will be copied to the ini file
+# Each service is a hash with at least a name property. These additional
+# properties may be defined:
+
+# - runtime_directories: directories created by systemd in /run when the service
+#   is started, and cleaned when it stops
+# - systemd_service_config: additional systemd service configuration that will
+#   be copied to the unit file
+# - uwsgi_config: additional uwsgi configuration that will be copied to the ini
+#   file
 # - user: user with which uwsgi will be executed
 # - group: group with which uwsgi will be executed
 # - socket_mode: permissions for the socket file (in octal format)
@@ -93,5 +97,7 @@ django_celery_services: []
 
 
 # useful variables
-django_run_with_env: '{{ django_dotenv|quote }} -f {{ django_env_file|quote }} run'
-django_run_manage_command: '{{ django_run_with_env }} {{ django_python|quote }} {{ django_manage_file|quote }}'
+django_run_with_env: '{{ django_dotenv | quote }} \
+  -f {{ django_env_file | quote }} run'
+django_run_manage_command: '{{ django_run_with_env }} \
+  {{ django_python | quote }} {{ django_manage_file | quote }}'

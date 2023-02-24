@@ -1,56 +1,62 @@
-- name: create app group
-  group:
+---
+- name: Create app group
+  ansible.builtin.group:
     name: "{{ django_group }}"
-    system: yes
+    system: true
 
-- name: create app user
-  user:
+- name: Create app user
+  ansible.builtin.user:
     name: "{{ django_user }}"
     group: "{{ django_group }}"
-    system: yes
+    system: true
 
-- name: ensure app directory exists
-  file:
+- name: Ensure app directory exists
+  ansible.builtin.file:
     path: "{{ django_directory }}"
     state: directory
     owner: "{{ django_user }}"
     group: "{{ django_group }}"
+    mode: "0755"
 
-- name: ensure static directory exists
-  file:
+- name: Ensure static directory exists
+  ansible.builtin.file:
     path: "{{ django_static_directory }}"
     state: directory
-    mode: 0755
+    mode: "0755"
 
-- name: ensure media directory exists
-  file:
+- name: Ensure media directory exists
+  ansible.builtin.file:
     path: "{{ django_media_directory }}"
     state: directory
-    mode: 0755
+    mode: "0755"
     owner: "{{ django_user }}"
     group: "{{ django_group }}"
 
-- name: ensure {{ django_app_name }}-shell utility script is present
-  template:
+- name: Ensure shell utility script is present
+  ansible.builtin.template:
     src: django-shell.j2
     dest: "/usr/local/bin/{{ django_app_name }}-shell"
-    mode: 0755
+    mode: "0755"
 
-- name: ensure {{ django_app_name }}-manage utility is present
-  template:
+- name: Ensure manage utility is present
+  ansible.builtin.template:
     src: manage.j2
     dest: "/usr/local/bin/{{ django_app_name }}-manage"
-    mode: 0755
+    mode: "0755"
 
-- import_role:
+- name: Set up the virtualenv
+  ansible.builtin.import_role:
     name: virtualenv
   tags: deploy
 
-- import_tasks: uwsgi.yml
+- name: Set up uwsgi and its configuration
+  ansible.builtin.import_tasks: uwsgi.yml
   when: django_uwsgi_services|length > 0
 
-- import_tasks: celery.yml
+- name: Set up celery
+  ansible.builtin.import_tasks: celery.yml
   when: django_celery_services|length > 0
 
-- import_tasks: nginx.yml
+- name: Set up nginx configuration for django
+  ansible.builtin.import_tasks: nginx.yml
   when: django_nginx_conf|bool

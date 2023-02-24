@@ -1,5 +1,7 @@
+---
+
 - name: Restart Django uwsgi services
-  service:
+  ansible.builtin.systemd:
     name: "{{ django_app_name }}-{{ item.name }}"
     state: restarted
   loop: "{{ django_uwsgi_services }}"
@@ -9,7 +11,7 @@
 
 
 - name: Restart Django celery services
-  systemd:
+  ansible.builtin.systemd:
     name: "{{ django_app_name }}-{{ item.name }}"
     state: restarted
   loop: "{{ django_celery_services }}"

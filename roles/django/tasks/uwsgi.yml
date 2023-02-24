@@ -1,54 +1,61 @@
-- name: ensure uwsgi log directory exists
-  file:
+---
+- name: Ensure uwsgi log directory exists
+  ansible.builtin.file:
     path: "{{ django_uwsgi_log_directory }}"
     state: directory
-    mode: 0770
+    mode: "0770"
     owner: "{{ django_user }}"
     group: "{{ django_group }}"
 
-- name: ensure uwsgi config directory exists
-  file:
+- name: Ensure uwsgi config directory exists
+  ansible.builtin.file:
     path: "/etc/uwsgi/apps-available"
     state: directory
+    mode: "0755"
 
-- name: copy uwsgi config files
-  template:
+- name: Copy uwsgi config files
+  ansible.builtin.template:
     src: uwsgi.ini.j2
     dest: /etc/uwsgi/apps-available/{{ django_app_name }}-{{ item.name }}.ini
+    mode: "0644"
   loop: "{{ django_uwsgi_services }}"
   notify:
     - django uwsgi config changed
 
-- name: install uwsgi logrotate files
-  template:
+- name: Install uwsgi logrotate files
+  ansible.builtin.template:
     src: logrotate.j2
     dest: "/etc/logrotate.d/django"
+    mode: "0644"
 
-- name: install uwsgi socket files
-  template:
+- name: Install uwsgi socket files
+  ansible.builtin.template:
     src: uwsgi.socket.j2
     dest: /etc/systemd/system/{{ django_app_name }}-{{ item.name }}.socket
+    mode: "0644"
   loop: "{{ django_uwsgi_services }}"
   register: django_uwsgi_socket_unit
 
-- name: install uwsgi service files
-  template:
+- name: Install uwsgi service files
+  ansible.builtin.template:
     src: uwsgi.service.j2
     dest: /etc/systemd/system/{{ django_app_name }}-{{ item.name }}.service
+    mode: "0644"
   loop: "{{ django_uwsgi_services }}"
   register: django_uwsgi_service_unit
   notify: django uwsgi config changed
 
+# refresh systemd daemon now to enable the sockets below
 - name: Refresh systemd daemon
-  systemd:
-    daemon-reload: yes
+  ansible.builtin.systemd:
+    daemon-reload: true
   when: django_uwsgi_socket_unit.changed or django_uwsgi_service_unit.changed
   tags:
-    - skip_ansible_lint  # refresh systemd daemon now to enable the sockets below
+    - skip_ansible_lint
 
-- name: ensure the uwsgi sockets are enabled and started
-  systemd:
+- name: Ensure the uwsgi sockets are enabled and started
+  ansible.builtin.systemd:
     name: "{{ django_app_name }}-{{ item.name }}.socket"
-    enabled: yes
+    enabled: true
     state: started
   loop: "{{ django_uwsgi_services }}"

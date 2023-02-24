@@ -1,11 +1,14 @@
-- import_tasks: install.yml
+- name: Install django application
+  ansible.builtin.import_tasks: install.yml
   tags:
     - provision
 
-- import_tasks: environment.yml
+- name: Set up the environment
+  ansible.builtin.import_tasks: environment.yml
   tags:
     - deploy
 
-- import_tasks: django.yml
+- name: Run deployment scripts for django
+  ansible.builtin.import_tasks: django.yml
   tags:
     - deploy

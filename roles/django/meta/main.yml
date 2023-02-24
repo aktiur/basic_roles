@@ -1,3 +1,4 @@
+---
 galaxy_info:
   role_name: django
   description: Installe un projet django, configure uwsgi, nginx et celery
@@ -9,4 +10,4 @@ galaxy_info:
         - bionic
         - focal
   license: GPL-3.0-only
-  min_ansible_version: 2.6
+  min_ansible_version: "2.6"

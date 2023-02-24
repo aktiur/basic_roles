@@ -1,54 +1,62 @@
-
-- name: install celery service files
-  template:
+---
+- name: Install celery service files
+  ansible.builtin.template:
     src: celery.service.j2
     dest: /etc/systemd/system/{{ django_app_name }}-{{ item.name }}.service
+    mode: "0644"
   loop: "{{ django_celery_services }}"
   register: django_celery_service_files
   notify: django celery config changed
 
-- name: ensure the prometheus exporter for celery is configured
-  template:
+- name: Ensure the prometheus exporter for celery is configured
+  ansible.builtin.template:
     src: celery-exporter.service.j2
     dest: /etc/systemd/system/{{ django_app_name }}-celery-exporter.service
+    mode: "0644"
+
   register: django_celery_exporter
 
 - name: Refresh systemd daemon
-  systemd:
-    daemon-reload: yes
+  ansible.builtin.systemd:
+    daemon-reload: true
   when: django_celery_service_files.changed or django_celery_exporter.changed
   tags:
-    - skip_ansible_lint # systemd daemon needs to be reloaded now
+    - skip_ansible_lint  # systemd daemon needs to be reloaded now
 
-- name: ensure the celery services are enabled and started
-  systemd:
+- name: Ensure the celery services are enabled and started
+  ansible.builtin.systemd:
     name: "{{ django_app_name }}-{{ item.name }}.service"
-    enabled: yes
+    enabled: true
     state: started
   loop: "{{ django_celery_services }}"
 
-- name: ensure the celery exporter is enabled and started
-  systemd:
+- name: Ensure the celery exporter is enabled and started
+  ansible.builtin.systemd:
     name: "{{ django_app_name }}-celery-exporter.service"
-    enabled: yes
+    enabled: true
     state: started
 
-- name: ensure nginx config for celery exporter is installed
-  template:
+- name: Ensure nginx config for celery exporter is installed
+  ansible.builtin.template:
     src: celery-exporter-nginx.conf.j2
-    dest: /etc/nginx/sites-available/03-{{ django_app_name }}-celery-exporter.conf
+    dest: "/etc/nginx/sites-available/\
+      03-{{ django_app_name }}-celery-exporter.conf"
+    mode: "0644"
 
-- name: ensure nginx config for celery exporter is activated
-  file:
+
+- name: Ensure nginx config for celery exporter is activated
+  ansible.builtin.file:
     path: /etc/nginx/sites-enabled/03-{{ django_app_name }}-celery-exporter.conf
     src: ../sites-available/03-{{ django_app_name }}-celery-exporter.conf
     state: link
+    mode: "0644"
   notify: reload nginx
 
 # TODO: make it configurable
-- name: open port 9050 to monitoring server
-  ufw:
+- name: Open port 9050 to monitoring server
+  community.general.ufw:
     rule: allow
     port: 9050
     src: "{{ item }}"
-  with_items: "{{ groups['monitoring'] | map('extract', hostvars, 'ansible_host') | list }}"
+  with_items: "{{ groups['monitoring'] | \
+    map('extract', hostvars, 'ansible_host') | list }}"
