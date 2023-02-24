@@ -41,6 +41,14 @@
     cache_valid_time: "{{ apt_cache_valid_time | default (3600) }}"
   when: ansible_distribution_release != 'xenial'
 
+- name: Ensure additional filesystems are mounted
+  ansible.posix.mount:
+    state: mounted
+    src: "{{ item.src }}"
+    path: "{{ item.path }}"
+    fstype: "{{ item.fstype|default('ext4') }}"
+  loop: "{{ mounts }}"
+
 - name: Ensure required locales are installed
   locale_gen:
     name: "{{ item }}"
@@ -74,11 +82,7 @@
   lineinfile:
     path: /etc/ssh/ssh_known_hosts
     regexp: "^github.com "
-    line: "github.com ssh-rsa AAAAB3NzaC1yc2EAAAABIwAAAQEAq2A7hRGmdnm9tUDbO9IDSwBK6Tb\
-      Qa+PXYPCPy6rbTrTtw7PHkccKrpp0yVhp5HdEIcKr6pLlVDBfOLX9QUsyCOV0wzfjIJNlGEYsdlLJiz\
-      Hhbn2mUjvSAHQqZETYP81eFzLQNnPHt4EVVUh7VfDESU84KezmD5QlWpXLmvU31/yMf+Se8xhHTvKSC\
-      ZIFImWwoG6mbUoWf9nzpIoaSjB+weqqUUmpaaasXVal72J+UX2B+2RPW3RcT0eOzQgqlJL3RKrTJvds\
-      jE3JEAvGq3lGHSZXy28G3skua2SmVi/w4yCE6gbODqnTWlg7+wC604ydGXA8VJiS5ap43JXiUFFAaQ=="
+    line: "github.com ssh-rsa AAAAB3NzaC1yc2EAAAABIwAAAQEAq2A7hRGmdnm9tUDbO9IDSwBK6TbQa+PXYPCPy6rbTrTtw7PHkccKrpp0yVhp5HdEIcKr6pLlVDBfOLX9QUsyCOV0wzfjIJNlGEYsdlLJizHhbn2mUjvSAHQqZETYP81eFzLQNnPHt4EVVUh7VfDESU84KezmD5QlWpXLmvU31/yMf+Se8xhHTvKSCZIFImWwoG6mbUoWf9nzpIoaSjB+weqqUUmpaaasXVal72J+UX2B+2RPW3RcT0eOzQgqlJL3RKrTJvdsjE3JEAvGq3lGHSZXy28G3skua2SmVi/w4yCE6gbODqnTWlg7+wC604ydGXA8VJiS5ap43JXiUFFAaQ=="
 
 - name: "ensure fail2ban is {{ cloudflare_protected | bool | ternary('absent', 'present') }}"
   apt:
@@ -95,7 +99,7 @@
     - restart fail2ban
   when: not cloudflare_protected | bool
 
-- name: ensure journald logs are persistent across reboots
+- name: ensure journal directory is created so that logs are persisted
   file:
     path: /var/log/journal
     state: directory
@@ -145,7 +149,7 @@
   ufw:
     state: enabled
 
-- name: ensure useful diagnostic tools are present
+- name: ensure diagnostic tools are installed
   apt:
     name:
       - mtr
