@@ -1,0 +1,7 @@
+[Unit]
+Description=Service for alerting when timer unit for letsencrypt renewal fails
+After=network.target
+
+[Service]
+Type=simple
+ExecStart={{ letsencrypt_alert }}

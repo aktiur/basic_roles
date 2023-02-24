@@ -8,19 +8,39 @@
 - name: Create letsencrypt webroot directory
   file: path=/var/www/letsencrypt state=directory mode=0755
 
+- name: Generate certificates (deprecated style)
+  command: "certbot certonly --webroot -w /var/www/letsencrypt --cert-name {{ letsencrypt_domains[0] }} --expand -d {{ letsencrypt_domains | join(',') }} -m {{ letsencrypt_email }} -n --agree-tos"
+  register: certbot
+  changed_when: "'no action taken.' not in certbot.stdout"
+
+- name: Generate certificates
+  command: >-
+    certbot certonly
+    --webroot -n --expand --agree-tos
+    -w /var/www/letsencrypt
+    -m "{{ letsencrypt_email }}"
+    --cert-name "{{ item.name }}"
+    {% if item.alternatives %}-d "{{ item.alternatives | join(',') }}"{% endif %}
+  loop: "{{ letsencrypt_certificates }}"
+
 - name: Install hook for nginx reload
   copy:
     src: nginx.sh
     dest: /etc/letsencrypt/renewal-hooks/post/nginx.sh
-    mode: 0755
+    mode: 744
 
-- name: Generate certificates
-  command: "certbot certonly --webroot -w /var/www/letsencrypt \
-    --cert-name {{ letsencrypt_domains[0] }} --expand \
-      -d {{ letsencrypt_domains | join(',') }} \
-        -m {{ letsencrypt_email }} -n --agree-tos"
-  register: certbot
-  changed_when: "'no action taken.' not in certbot.stdout"
+- name: Create unit for failure alerts
+  template:
+    src: letsencrypt-alert@.service.j2
+    dest: /etc/systemd/system/letsencrypt-alert@.service
+  when: letsencrypt_alert is defined
+
+- name: Activate unit for failure alerts
+  lineinfile:
+    path: /lib/systemd/system/certbot.service
+    insertafter: \[Unit\]
+    line: "OnFailure=letsencrypt-alert@%n.service"
+  when: letsencrypt_alert is defined
 
 - name: Ensure domains point to localhost in hosts
   lineinfile:
