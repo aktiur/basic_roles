@@ -1,10 +1,10 @@
 namespace: "aktiur"
 name: "basic_roles"
-version: "0.2.4"
+version: "0.2.5"
 readme: "README.md"
 authors:
-  - "Jill Royer"
-  - "Arthur Cheysson"
+  - "Maud Royer"
+  - "Salomé Cheysson"
 repository: "https://github.com/aktiur/basic_roles"
 license:
   - "GPL-3.0-only"
