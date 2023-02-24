@@ -2,6 +2,7 @@ php_distro_versions:
   xenial: 7.0
   bionic: 7.2
   focal: 7.4
+  jammy: 8.1
 php_version: "{{ php_distro_versions[ansible_distribution_release] }}"
 php_conf_directory: /etc/php/{{ php_version }}
 
@@ -20,6 +21,7 @@ php_extensions:
   - php-xmlrpc
   - php-zip
   - php-sqlite3
+  - php-redis
 
 php_error_reporting: 'E_ALL & ~E_DEPRECATED & ~E_STRICT'
 php_display_errors: 'Off'
