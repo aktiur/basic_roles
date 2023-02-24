@@ -3,21 +3,28 @@
     msg: "You have to define at least one of 'virtualenv_requirements_txt', 'virtualenv_pipfile_directory' or 'virtualenv_packages'"
   when: virtualenv_requirements_txt is undefined and virtualenv_pipfile_directory is undefined and virtualenv_packages is undefined
 
+- name: make sure pip is up to date
+  pip:
+    name: pip
+    state: latest
+    virtualenv: "{{ virtualenv_directory }}"
+    virtualenv_command: "/usr/bin/python{{ python_version }} -m venv"
+
 - name: Update from requirements.txt
   pip:
     state: present
     virtualenv: "{{ virtualenv_directory }}"
     virtualenv_command: "/usr/bin/python{{ python_version }} -m venv"
     requirements: "{{ virtualenv_requirements_txt }}"
-  when: virtualenv_requirements_txt is defined
+  when: virtualenv_requirements_txt|default(False)
 
-- name: make sure pipenv is present
+- name: make sure pipenv is present and up to date
   pip:
     name: pipenv
-    state: present
+    state: latest
     virtualenv: "{{ virtualenv_directory }}"
     virtualenv_command: "/usr/bin/python{{ python_version }} -m venv"
-  when: virtualenv_pipfile_directory is defined
+  when: virtualenv_pipfile_directory|default(False)
 
 - name: update from Pipfile.lock
   command: "{{ virtualenv_directory }}/bin/pipenv sync --bare{% if virtualenv_pipenv_install_dev %} --dev{% endif %}"
@@ -25,7 +32,26 @@
     chdir: "{{ virtualenv_pipfile_directory }}"
   environment:
     VIRTUAL_ENV: "{{ virtualenv_directory }}"
-  when: virtualenv_pipfile_directory is defined
+  when: virtualenv_pipfile_directory|default(False)
+
+- name: make sure poetry is present and up to date
+  pip:
+    name:
+      - setuptools
+      - poetry
+    state: latest
+    virtualenv: "{{ virtualenv_poetry_venv }}"
+    virtualenv_command: "/usr/bin/python{{ python_version }} -m venv"
+  when: virtualenv_poetry_directory|default(False)
+
+- name: update from poetry.lock
+  command: "{{ virtualenv_poetry_command }} install --no-interaction"
+  args:
+    chdir: "{{ virtualenv_poetry_directory }}"
+  environment:
+    VIRTUAL_ENV: "{{ virtualenv_directory }}"
+    PYTHON_KEYRING_BACKEND: "keyring.backends.null.Keyring"
+  when: virtualenv_poetry_directory|default(False)
 
 - name: make sure listed packages are present
   pip:

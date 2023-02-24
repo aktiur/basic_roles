@@ -1,1 +1,3 @@
 virtualenv_pipenv_install_dev: no
+virtualenv_poetry_venv: "/opt/poetry"
+virtualenv_poetry_command: "{{ virtualenv_poetry_venv }}/bin/poetry"
