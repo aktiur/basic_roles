@@ -1,58 +1,67 @@
 - name: Create matomo group
-  group: name={{ matomo_group }} system=yes
+  ansible.builtin.group:
+    name: "{{ matomo_group }}"
+    system: true
 
 - name: Create matomo user
-  user: name={{ matomo_user }} group={{ matomo_group }} system=yes
+  ansible.builtin.user:
+    name: "{{ matomo_user }}"
+    group: "{{ matomo_group }}"
+    system: true
 
 - name: Create WordPress php-fpm configuration file
-  template:
+  ansible.builtin.template:
     src: php-fpm.conf.j2
     dest: "{{ php_conf_directory }}/fpm/pool.d/matomo.conf"
+    mode: "0644"
   notify: reload php-fpm
 
 - name: Set up matomo special mariadb conf
-  copy:
+  ansible.builtin.copy:
     src: 60-matomo_tuning.cnf
     dest: /etc/mysql/mariadb.conf.d/60-matomo_tuning.cnf
+    mode: "0644"
   notify:
     - reload mariadb
 
 - name: Create databases for sites
-  mysql_db:
+  community.mysql.mysql_db:
     name: matomo
     state: present
 
 - name: Create matomo database user to db and grant permissions
-  mysql_user:
-    name: "{{ matomo_user }}" # we use socket authentication
-    append_privs: yes
+  community.mysql.mysql_user:
+    name: "{{ matomo_user }}"  # we use socket authentication
+    append_privs: true
     priv: "matomo.*:ALL"
     state: present
 
 - name: Ensure matmoto directory exists
-  file:
+  ansible.builtin.file:
     path: "{{ matomo_root }}"
     state: directory
+    mode: "0755"
 
 - name: Download Matomo
-  unarchive:
+  ansible.builtin.unarchive:
     src: https://builds.matomo.org/matomo.zip
     dest: "{{ matomo_root }}"
     creates: "{{ matomo_root }}/matomo"
-    remote_src: yes
+    remote_src: true
     owner: "{{ matomo_user }}"
     group: "{{ matomo_user }}"
 
 - name: Ensure nginx configuration is present
-  template:
+  ansible.builtin.template:
     src: nginx.conf.j2
     dest: /etc/nginx/sites-available/02-matomo.conf
+    mode: "0644"
   vars:
     main_domain: "{{ matomo_domain }}"
   notify: reload nginx
 
 - name: Ensure nginx configuration is enabled
-  file:
+  ansible.builtin.file:
     path: /etc/nginx/sites-enabled/02-matomo.conf
     src: ../sites-available/02-matomo.conf
     state: link
@@ -60,17 +69,18 @@
     - reload nginx
 
 - name: Ensure the cron task for archiving is installed
-  cron:
+  ansible.builtin.cron:
     name: matomo
     user: "{{ matomo_user }}"
     minute: "*/5"
     job: php /var/www/matomo/matomo/console core:archive -q
 
 - name: Ensure the cron task for optimizing is installed
-  cron:
+  ansible.builtin.cron:
     name: matomo-optimize
     user: "{{ matomo_user }}"
     minute: 0
     hour: 6
     day: 1
-    job: php /var/www/matomo/matomo/console database:optimize-archive-tables last2
+    job: php /var/www/matomo/matomo/console \
+      database:optimize-archive-tables last2

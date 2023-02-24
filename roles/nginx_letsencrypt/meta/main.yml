@@ -1,7 +1,8 @@
+---
 galaxy_info:
   role_name: nginx_letsencrypt
   description: Génère des certificats letsencrypt pour un serveur nginx
-  author: Jill Royer & Arthur Cheysson
+  author: Maud Royer & Salomé Cheysson
   platforms:
     - name: Ubuntu
       versions:
@@ -9,4 +10,4 @@ galaxy_info:
         - bionic
         - focal
   license: GPL-3.0-only
-  min_ansible_version: 2.6
+  min_ansible_version: "2.6"

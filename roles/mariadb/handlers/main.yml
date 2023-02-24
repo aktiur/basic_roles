@@ -1,2 +1,5 @@
-- name: reload mariadb
-  service: name=mysql state=restarted
+---
+- name: Reload mariadb
+  ansible.builtin.systemd:
+    name: mysql
+    state: restarted

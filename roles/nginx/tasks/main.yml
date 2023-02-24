@@ -1,39 +1,44 @@
+---
 - name: Add latest nginx PPA
-  apt_repository:
+  ansible.builtin.apt_repository:
     repo: 'ppa:nginx/stable'
   when: nginx_latest_ppa|bool
 
 - name: Ensure Nginx is installed
-  apt:
+  ansible.builtin.apt:
     name:
       - nginx
       - nginx-extras
     state: present
-    update_cache: yes
-    cache_valid_time: "{{ apt_cache_valid_time | default (3600) }}"
+    update_cache: true
+    cache_valid_time: "{{ apt_cache_valid_time | default(3600) }}"
 
 - name: Ensure dhparams are present
-  copy:
+  ansible.builtin.copy:
     dest: /etc/nginx/dhparams.pem
     src: dhparams.pem
+    mode: "0600"
 
 - name: Install mime.types
-  copy:
+  ansible.builtin.copy:
     src: mime.types
     dest: /etc/nginx/mime.types
+    mode: "0644"
   notify:
     - reload nginx
 
 - name: Install nginx.conf
-  template:
+  ansible.builtin.template:
     src: nginx.conf.j2
     dest: /etc/nginx/nginx.conf
+    mode: "0644"
   notify:
     - reload nginx
 
-# See https://bugs.mageia.org/show_bug.cgi?id=26397 and https://github.com/Perl/perl5/issues/17154
+# See https://bugs.mageia.org/show_bug.cgi?id=26397 and
+# https://github.com/Perl/perl5/issues/17154
 - name: Disable perl module on Focal
-  file:
+  ansible.builtin.file:
     path: /etc/nginx/modules-enabled/50-mod-http-perl.conf
     state: absent
   notify:
@@ -41,9 +46,10 @@
   when: ansible_distribution_release == "focal"
 
 - name: Copy helpful util conf includes
-  copy:
+  ansible.builtin.copy:
     src: "{{ item }}"
     dest: /etc/nginx/{{ item }}
+    mode: "0644"
   loop:
     - uwsgi_params
     - proxy_params
@@ -52,79 +58,88 @@
     - reload nginx
 
 - name: Ensure includes dir is present
-  file:
+  ansible.builtin.file:
     path: /etc/nginx/includes
     state: directory
+    mode: "0755"
 
 - name: Install letsencrypt_acme_params helper file
-  copy:
+  ansible.builtin.copy:
     src: letsencrypt_acme_params
     dest: /etc/nginx/letsencrypt_acme_params
+    mode: "0644"
   register: letsencrypt_includes
 
 - name: Ensure default site is not enabled
-  file:
+  ansible.builtin.file:
     path: /etc/nginx/sites-enabled/default
     state: absent
 
 - name: Ensure basic configuration for letsencrypt is present
-  copy:
+  ansible.builtin.copy:
     src: 99-letsencrypt.conf
     dest: /etc/nginx/sites-available/99-letsencrypt.conf
+    mode: "0644"
   register: letsencrypt_conf
 
 - name: Ensure basic configuration for letsencrypt is enabled
-  file:
+  ansible.builtin.file:
     path: /etc/nginx/sites-enabled/99-letsencrypt.conf
     src: ../sites-available/99-letsencrypt.conf
     state: link
 
+- name: Ensure systemd config dir for nginx service exists
+  ansible.builtin.file:
+    path: /etc/systemd/system/nginx.service.d
+    state: directory
+    mode: "0755"
+
 - name: Copy additional nginx.service configuration
-  copy:
-    src: nginx.service.d
-    dest: /etc/systemd/system/
+  ansible.builtin.copy:
+    src: nginx.service.d/extend_file_limit.conf
+    dest: /etc/systemd/system/nginx.service.d/extend_file_limit.conf
+    mode: "0644"
   notify:
     - reload systemd
     - restart nginx
 
-
 - name: Ensure goaccess is available
-  apt:
+  ansible.builtin.apt:
     name: goaccess
-    state: latest
-    update_cache: yes
-    cache_valid_time: "{{ apt_cache_valid_time | default (3600) }}"
+    state: present
 
 - name: Ensure goaccess config file is present
-  copy:
+  ansible.builtin.copy:
     src: goaccess.conf
     dest: /etc/goaccess.conf
+    mode: "0644"
 
 - name: Ensure /var/www is owned by www-data
-  file:
+  ansible.builtin.file:
     path: /var/www
     owner: www-data
     group: www-data
 
 - name: Open port 80
-  ufw:
+  community.general.ufw:
     rule: allow
     port: "80"
   when: not cloudflare_protected|bool
 
 - name: Open port 443
-  ufw:
+  community.general.ufw:
     rule: allow
     port: "443"
   when: not cloudflare_protected|bool
 
 - name: Remove cloudflare ip file
-  file:
+  ansible.builtin.file:
     path: /etc/nginx/conf.d/cloudflare.conf
     state: absent
   when: not cloudflare_protected|bool
 
-- import_tasks: cloudflare.yml
+- name: Add configuration for Cloudflare
+  ansible.builtin.import_tasks: cloudflare.yml
   when: cloudflare_protected|bool
   tags: ["cloudflare"]
 
@@ -133,15 +148,15 @@
 # playbook (plutôt que de faire ça dans un handler)
 
 - name: Ensure nginx is started and enabled
-  service:
+  ansible.builtin.service:
     name: nginx
-    enabled: yes
+    enabled: true
     state: started
 
 - name: Reload nginx for letsencrypt
-  service:
+  ansible.builtin.service:
     name: nginx
     state: reloaded
   when: letsencrypt_includes.changed or letsencrypt_conf.changed
   tags:
-    - skip_ansible_lint
+    - skip_ansible_lint  # must run before handlers

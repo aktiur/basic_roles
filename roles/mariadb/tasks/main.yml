@@ -1,8 +1,9 @@
+---
 - name: Install MariaDB
-  apt:
+  ansible.builtin.apt:
     name:
       - mariadb-server
       - mariadb-client
       - python{{ system_python_version }}-mysqldb
-    update_cache: yes
-    cache_valid_time: "{{ apt_cache_valid_time | default (3600) }}"
+    update_cache: true
+    cache_valid_time: "{{ apt_cache_valid_time | default(3600) }}"

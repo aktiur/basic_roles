@@ -1,3 +1,4 @@
+---
 matomo_user: matomo
 matomo_group: matomo
 matomo_root: /var/www/matomo
