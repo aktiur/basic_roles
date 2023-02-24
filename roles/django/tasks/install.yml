@@ -1,3 +1,21 @@
+- name: create app group
+  group:
+    name: "{{ django_group }}"
+    system: yes
+
+- name: create app user
+  user:
+    name: "{{ django_user }}"
+    group: "{{ django_group }}"
+    system: yes
+
+- name: ensure app directory exists
+  file:
+    path: "{{ django_directory }}"
+    state: directory
+    owner: "{{ django_user }}"
+    group: "{{ django_group }}"
+
 - name: ensure static directory exists
   file:
     path: "{{ django_static_directory }}"
@@ -23,6 +41,10 @@
     src: manage.j2
     dest: "/usr/local/bin/{{ django_app_name }}-manage"
     mode: 0755
+
+- import_role:
+    name: virtualenv
+  tags: deploy
 
 - import_tasks: uwsgi.yml
   when: django_uwsgi_services|length > 0

@@ -1,20 +1,3 @@
-- name: create app group
-  group:
-    name: "{{ django_group }}"
-    system: yes
-
-- name: create app user
-  user:
-    name: "{{ django_user }}"
-    group: "{{ django_group }}"
-    system: yes
-
-- name: ensure app directory exists
-  file:
-    path: "{{ django_directory }}"
-    state: directory
-    owner: "{{ django_user }}"
-    group: "{{ django_group }}"
 - name: ensure we have a django secret
   host_secret:
     name: django_secret

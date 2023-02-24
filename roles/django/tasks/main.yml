@@ -1,11 +1,10 @@
-- import_tasks: environment.yml
-  tags:
-    - provision
-    - deploy
-
 - import_tasks: install.yml
   tags:
     - provision
+
+- import_tasks: environment.yml
+  tags:
+    - deploy
 
 - import_tasks: django.yml
   tags:

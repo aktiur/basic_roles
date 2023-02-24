@@ -4,9 +4,10 @@
 Description=Celery worker {{ django_app_name }}-{{ item.name }}
 
 [Service]
-ExecStart={{ django_python|quote }} -m celery worker \
+ExecStart={{ django_python|quote }} -m celery \
     --app {{ item.app|default(django_main_package)|quote }} \
-    --concurrency {{ item.concurrency|default(2) }} \
+    worker \
+    --concurrency {{ item.num_workers|default(2) }} \
     --logfile=/dev/null \
 {% if item.queues is defined and item.queues %}
     --queues {{ item.queues|join(',')|quote }} \

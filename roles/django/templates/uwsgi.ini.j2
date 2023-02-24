@@ -2,7 +2,7 @@
 master = true
 chdir = {{ django_src_directory }}
 module = {{ django_main_package }}.wsgi:application
-processes = {{ item.concurrency|default(4) }}
+processes = {{ item.num_workers|default(4) }}
 logto = {{ django_uwsgi_log_directory }}/{{ item.name }}.log
 ignore-sigpipe = true
 ignore-write-errors = true
