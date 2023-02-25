@@ -1,2 +1,2 @@
-- name: reload php-fpm
+- name: Reload php-fpm
   service: name=php{{ php_version }}-fpm state=restarted

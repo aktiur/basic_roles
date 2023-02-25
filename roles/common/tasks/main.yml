@@ -98,7 +98,7 @@
     dest: /etc/fail2ban/jail.d/nginx.conf
     mode: "0644"
   notify:
-    - restart fail2ban
+    - Restart fail2ban
   when: not cloudflare_protected | bool
 
 - name: Ensure journal directory is created so that logs are persisted
@@ -108,7 +108,7 @@
     group: systemd-journal
     mode: "02755"
   notify:
-    - restart journald
+    - Restart journald
 
 
 # Dans sa séquence d'initialisation, UFW fait un truc un peu bête : il règle la

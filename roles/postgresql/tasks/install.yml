@@ -41,4 +41,4 @@
     cache_valid_time: "{{ apt_cache_valid_time | default (3600) }}"
   when: postgresql_ext_install_postgis
   notify:
-    - restart postgresql
+    - Restart postgresql

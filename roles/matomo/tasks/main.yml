@@ -14,7 +14,7 @@
     src: php-fpm.conf.j2
     dest: "{{ php_conf_directory }}/fpm/pool.d/matomo.conf"
     mode: "0644"
-  notify: reload php-fpm
+  notify: Reload php-fpm
 
 - name: Set up matomo special mariadb conf
   ansible.builtin.copy:
@@ -22,7 +22,7 @@
     dest: /etc/mysql/mariadb.conf.d/60-matomo_tuning.cnf
     mode: "0644"
   notify:
-    - reload mariadb
+    - Reload mariadb
 
 - name: Create databases for sites
   community.mysql.mysql_db:
@@ -58,7 +58,7 @@
     mode: "0644"
   vars:
     main_domain: "{{ matomo_domain }}"
-  notify: reload nginx
+  notify: Reload nginx
 
 - name: Ensure nginx configuration is enabled
   ansible.builtin.file:
@@ -66,7 +66,7 @@
     src: ../sites-available/02-matomo.conf
     state: link
   notify:
-    - reload nginx
+    - Reload nginx
 
 - name: Ensure the cron task for archiving is installed
   ansible.builtin.cron:

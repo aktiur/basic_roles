@@ -76,7 +76,7 @@
     dest: /etc/nginx/sites-available/99-ssl-catchall.conf
     mode: "0644"
   notify:
-    - reload nginx
+    - Reload nginx
 
 - name: Ensure Nginx "catch-all" configuration is enabled
   ansible.builtin.file:
@@ -84,4 +84,4 @@
     src: ../sites-available/99-ssl-catchall.conf
     state: link
   notify:
-    - reload nginx
+    - Reload nginx

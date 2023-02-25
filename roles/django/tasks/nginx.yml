@@ -10,7 +10,7 @@
     redirect_domains: "{{ item.redirect_domains | default([]) }}"
   with_items: "{{ django_uwsgi_services }}"
   notify:
-    - reload nginx
+    - Reload nginx
 
 - name: Ensure nginx host configuration is enabled
   ansible.builtin.file:
@@ -19,5 +19,5 @@
     state: link
   with_items: "{{ django_uwsgi_services }}"
   notify:
-    - reload nginx
+    - Reload nginx
   when: django_nginx_conf

@@ -25,7 +25,7 @@
     dest: /etc/nginx/mime.types
     mode: "0644"
   notify:
-    - reload nginx
+    - Reload nginx
 
 - name: Install nginx.conf
   ansible.builtin.template:
@@ -33,7 +33,7 @@
     dest: /etc/nginx/nginx.conf
     mode: "0644"
   notify:
-    - reload nginx
+    - Reload nginx
 
 # See https://bugs.mageia.org/show_bug.cgi?id=26397 and
 # https://github.com/Perl/perl5/issues/17154
@@ -42,7 +42,7 @@
     path: /etc/nginx/modules-enabled/50-mod-http-perl.conf
     state: absent
   notify:
-    - reload nginx
+    - Reload nginx
   when: ansible_distribution_release == "focal"
 
 - name: Copy helpful util conf includes
@@ -55,7 +55,7 @@
     - proxy_params
     - fastcgi_params
   notify:
-    - reload nginx
+    - Reload nginx
 
 - name: Ensure includes dir is present
   ansible.builtin.file:
@@ -100,8 +100,8 @@
     dest: /etc/systemd/system/nginx.service.d/extend_file_limit.conf
     mode: "0644"
   notify:
-    - reload systemd
-    - restart nginx
+    - Reload systemd
+    - Restart nginx
 
 - name: Ensure goaccess is available
   ansible.builtin.apt:

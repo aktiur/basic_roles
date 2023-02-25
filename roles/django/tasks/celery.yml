@@ -50,7 +50,7 @@
     src: ../sites-available/03-{{ django_app_name }}-celery-exporter.conf
     state: link
     mode: "0644"
-  notify: reload nginx
+  notify: Reload nginx
 
 # TODO: make it configurable
 - name: Open port 9050 to monitoring server

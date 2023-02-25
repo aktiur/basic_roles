@@ -12,7 +12,7 @@
   command: mv {{ php_conf_directory }}/fpm/pool.d/www.conf {{ php_conf_directory }}/fpm/pool.d/www.disabled
   args:
     creates: "{{ php_conf_directory }}/fpm/pool.d/www.disabled"
-  notify: reload php-fpm
+  notify: Reload php-fpm
   when: php_disable_default_pool
 
 - name: Copy php.ini
@@ -20,4 +20,4 @@
     src: php.ini.j2
     dest: "{{ php_conf_directory }}/fpm/php.ini"
   notify:
-    - reload php-fpm
+    - Reload php-fpm
