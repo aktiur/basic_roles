@@ -18,6 +18,7 @@
     -m {{ letsencrypt_email }}
     --cert-name {{ letsencrypt_domains[0] }}
     -d {{ letsencrypt_domains | join(',') }}
+  when: letsencrypt_domains | length > 0
   register: certbot
   changed_when: "'no action taken.' not in certbot.stdout"
 
@@ -28,10 +29,13 @@
     -w /var/www/letsencrypt
     -m "{{ letsencrypt_email }}"
     --cert-name "{{ item.name }}"
-    {% if item.alternatives -%}
-      -d "{{ item.alternatives | join(',') }}"
-    {%- endif %}
+    -d "{{ item.name }}
+    {% if item.alternatives | default([]) -%}
+      ,{{ item.alternatives | join(',') }}
+    {%- endif -%}"
+
   loop: "{{ letsencrypt_certificates }}"
+  register: certbot
   changed_when: "'no action taken.' not in certbot.stdout"
 
 - name: Install hook for nginx reload

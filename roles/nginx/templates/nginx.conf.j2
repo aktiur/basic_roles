@@ -30,6 +30,9 @@ http {
   # server_names_hash_bucket_size 64;
   # server_name_in_redirect off;
 
+  variables_hash_max_size 1024;
+  variables_hash_bucket_size 64;
+
   include /etc/nginx/mime.types;
   default_type application/octet-stream;
 
@@ -55,7 +58,7 @@ http {
   access_log /var/log/nginx/access.log;
   error_log /var/log/nginx/error.log;
 
-  log_format fastcgi_cache '{{ "$real_ip" if cloudflare_protected else "$remote_addr" }} '
+  log_format cache '{{ "$real_ip" if cloudflare_protected else "$remote_addr" }} '
                   '- $upstream_cache_status [$time_local] "$request" $status $body_bytes_sent '
                     '"$http_referer" "$http_user_agent"';
 

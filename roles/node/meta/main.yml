@@ -1,6 +1,7 @@
+---
 galaxy_info:
-  role_name: mariadb
-  description: Installe un serveur mariadb
+  role_name: node
+  description: Installe node js
   author: Jill Royer
   platforms:
     - name: Ubuntu

@@ -1,1 +1,7 @@
-system_python_version: "{{ (ansible_distribution_release == 'focal') | ternary('3', '') }}"
+python_distro_versions:
+  xenial: ""
+  bionic: ""
+  focal: "3"
+  jammy: "3"
+
+system_python_version: "{{ python_distro_versions[ansible_distribution_release] }}"

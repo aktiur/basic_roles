@@ -3,8 +3,9 @@
 server {
   listen 443 ssl http2 default_server;
 
-  ssl_certificate     /etc/letsencrypt/live/{{ letsencrypt_domains[0] }}/fullchain.pem;
-  ssl_certificate_key /etc/letsencrypt/live/{{ letsencrypt_domains[0] }}/privkey.pem;
+  ssl_certificate     /etc/letsencrypt/live/{{ letsencrypt_main_domain }}/fullchain.pem;
+  ssl_certificate_key /etc/letsencrypt/live/{{ letsencrypt_main_domain }}/privkey.pem;
+
 
   server_name _;
 
@@ -12,5 +13,5 @@ server {
     deny all;
   }
 
-  include /etc/nginx/includes/letsencrypt.conf;
+  include /etc/nginx/letsencrypt_acme_params;
 }

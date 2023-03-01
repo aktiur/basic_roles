@@ -1,15 +1,16 @@
-- name: add repo for python
-  apt_repository:
+---
+- name: Add repo for python
+  ansible.builtin.apt_repository:
     repo: 'ppa:deadsnakes/ppa'
   register: python_repo
   when: python_use_ppa|bool
 
-- name: ensure python is installed
-  apt:
+- name: Ensure python is installed
+  ansible.builtin.apt:
     name:
       - "python{{ python_version }}"
       - "python{{ python_version }}-dev"
       - "python{{ python_version }}-venv"
     state: present
-    update_cache: yes
+    update_cache: true
     cache_valid_time: "{{ apt_cache_valid_time | default (3600) }}"

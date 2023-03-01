@@ -57,7 +57,7 @@
     dest: /etc/nginx/sites-available/02-matomo.conf
     mode: "0644"
   vars:
-    main_domain: "{{ matomo_domain }}"
+    main_domain: "{{ matomo_domain | default(hostname) }}"
   notify: Reload nginx
 
 - name: Ensure nginx configuration is enabled

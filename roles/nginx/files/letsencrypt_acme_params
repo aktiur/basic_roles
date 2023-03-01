@@ -3,7 +3,7 @@
 # should be included in every server for which a letsencrypt certificate
 # need to be created.
 
-location ~ /.well-known {
+location ~ /.well-known/acme-challenge/ {
   root /var/www/letsencrypt/;
   try_files $uri =404;
   satisfy any;
