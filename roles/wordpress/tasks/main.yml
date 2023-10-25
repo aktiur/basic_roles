@@ -1,0 +1,86 @@
+- name: Create wordpress groups
+  ansible.builtin.group:
+    name: "{{ item.group | default(wordpress_group) }}"
+    system: true
+  with_items: "{{ wordpress_sites }}"
+
+- name: Create wordpress users
+  ansible.builtin.user:
+    name: "{{ item.user | default(wordpress_user) }}"
+    group: "{{ item.group | default(wordpress_group) }}"
+    system: true
+  with_items: "{{ wordpress_sites }}"
+
+- name: Install WP-CLI
+  ansible.builtin.get_url:
+    url: "{{ wp_cli_phar_url }}"
+    dest: "{{ wp_cli_bin_path }}"
+    mode: "0755"
+
+- name: Retrieve WP-CLI tab completions
+  ansible.builtin.get_url:
+    url: "{{ wp_cli_completion_url }}"
+    dest: "{{ wp_cli_completion_path }}"
+    mode: "0644"
+
+- name: Create databases for sites
+  community.mysql.mysql_db:
+    name: "{{ item.slug }}"
+    state: present
+  with_items: "{{ wordpress_sites }}"
+
+- name: Create wordpress database user to db and grant permissions
+  community.mysql.mysql_user:
+    # we use socket authentication
+    name: "{{ item.user | default(wordpress_user) }}"
+    append_privs: true
+    priv: "{{ item.slug }}.*:ALL"
+    state: present
+  with_items: "{{ wordpress_sites }}"
+
+- name: Create WordPress php-fpm configuration file
+  ansible.builtin.template:
+    src: php-fpm.conf.j2
+    dest: "{{ php_conf_directory }}/fpm/pool.d/wordpress-{{ item.slug }}.conf"
+    mode: "0644"
+  notify: reload php-fpm
+  with_items: "{{ wordpress_sites }}"
+
+- name: Create Nginx cache directory
+  ansible.builtin.file:
+    path: /var/cache/nginx/
+    state: directory
+    user: www-data
+    mode: "0700"
+
+- name: Create WordPress configuration for Nginx
+  ansible.builtin.template:
+    src: "nginx.conf.j2"
+    dest: "/etc/nginx/sites-available/{{ item.slug }}.conf"
+    mode: "0644"
+  vars:
+    main_domain: "{{ item.domain }}"
+    cert_domain: "{{ item.domain }}"
+    redirect_domains: "{{ item.redirect_domains | default([]) }}"
+  with_items: "{{ wordpress_sites }}"
+  notify: reload nginx
+
+- name: Enable Wordpress configurations for Nginx
+  ansible.builtin.file:
+    path: /etc/nginx/sites-enabled/{{ item.slug }}.conf
+    src: ../sites-available/{{ item.slug }}.conf
+    state: link
+  with_items: "{{ wordpress_sites }}"
+  notify: reload nginx
+
+- name: Create cronjobs for wp-cron.php
+  ansible.builtin.cron:
+    name: "Trigger wp-cron.php"
+    minute: "*/5"
+    job: "php {{ wordpress_install_path }}/wp-cron.php > /dev/null 2>&1"
+    user: "{{ item.user | default(wordpress_user) }}"
+  with_items: "{{ wordpress_sites }}"
+
+- name: Install vanilla Wordpress sites
+  ansible.builtin.include_tasks: deploy_vanilla.yml
+  when: vanilla_wp_sites|length > 0

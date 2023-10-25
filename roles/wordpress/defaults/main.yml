@@ -1,0 +1,45 @@
+---
+php_fpm_pm_max_children: 10
+php_fpm_pm_start_servers: 1
+php_fpm_pm_min_spare_servers: 1
+php_fpm_pm_max_spare_servers: 3
+php_fpm_pm_max_requests: 500
+
+wordpress_root: /var/www
+wordpress_web_root: "{{ wordpress_root }}/{{ item.slug }}\
+  {% if 'repo' in item %}/current/web{% else %}/wordpress{% endif %}"
+wordpress_install_path: "{{ wordpress_web_root }}\
+  {% if 'repo' in item %}/wp{% endif %}"
+wordpress_user: "wordpress-{{ item.slug }}"
+wordpress_group: "wordpress-{{ item.slug }}"
+wordpress_plugins:
+  - redis-cache
+wordpress_disable_rpc: false
+wordpress_limit_requests: false
+
+bedrock_sites: "{{ wordpress_sites | json_query('[?repo]') }}"
+bedrock_auth_key: "{{ vaulted_bedrock_auth_key }}"
+bedrock_secure_auth_key: "{{ vaulted_bedrock_secure_auth_key }}"
+bedrock_logged_in_key: "{{ vaulted_bedrock_logged_in_key }}"
+bedrock_nonce_key: "{{ vaulted_bedrock_nonce_key }}"
+bedrock_auth_salt: "{{ vaulted_bedrock_auth_salt }}"
+bedrock_secure_auth_salt: "{{ vaulted_bedrock_secure_auth_salt }}"
+bedrock_logged_in_salt: "{{ vaulted_bedrock_logged_in_salt }}"
+bedrock_nonce_salt: "{{ vaulted_bedrock_nonce_salt }}"
+
+vanilla_wp_sites: "{{ wordpress_sites | json_query('[?!repo]') }}"
+
+# Fastcgi cache params
+wordpress_cache_duration: 30s
+wordpress_skip_cache_uri: "/wp-admin/|/wp-json/|/xmlrpc.php|wp-.*.php|\
+  /feed/|index.php|sitemap(_index)?.xml"
+wordpress_skip_cache_cookie: "comment_author|wordpress_[a-f0-9]+|wp-postpass|\
+  wordpress_no_cache|wordpress_logged_in"
+nginx_log_format: "cache"
+
+wp_cli_bin_path: /usr/bin/wp
+wp_cli_phar_url: >-
+  https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar
+wp_cli_completion_url: >
+  https://raw.githubusercontent.com/wp-cli/wp-cli/master/utils/wp-completion.bash
+wp_cli_completion_path: /etc/bash_completion.d/wp-completion.bash

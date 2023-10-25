@@ -1,0 +1,73 @@
+---
+
+- name: Create directories for wordpress sites
+  ansible.builtin.file:
+    path: "{{ wordpress_root}}/{{ item.slug }}"
+    state: directory
+    mode: "0755"
+  with_items: "{{ wordpress_sites }}"
+
+- name: Download Wordpress
+  ansible.builtin.unarchive:
+    src: https://fr.wordpress.org/latest-fr_FR.tar.gz
+    remote_src: true
+    creates: "{{ wordpress_root }}/{{ item.slug }}/wordpress"
+    owner: "{{ item.user | default(wordpress_user) }}"
+    group: "{{ item.group | default(item.group | default(wordpress_group)) }}"
+    dest: "{{ wordpress_root }}/{{ item.slug }}"
+  with_items: "{{ wordpress_sites }}"
+  notify:
+    - reload php-fpm
+
+- name: Creates salts.php if not present
+  ansible.builtin.lineinfile:
+    path: "{{ wordpress_root }}/{{ item.slug }}/wordpress/salts.php"
+    line: "<?php"
+    create: true
+    mode: "0640"
+    owner: "{{ item.user | default(wordpress_user) }}"
+    group: "{{ item.group | default(item.group | default(wordpress_group)) }}"
+  with_items: "{{ wordpress_sites }}"
+  register: wordpress_salt_files
+
+- name: Download salts for new salts.php files
+  ansible.builtin.blockinfile:
+    path: "{{ wordpress_root }}/{{ item.item.slug }}/wordpress/salts.php"
+    block: >-
+      {{ lookup('url',
+      'https://api.wordpress.org/secret-key/1.1/salt/',
+      split_lines=False) }}
+  when: item.changed
+  loop: "{{ wordpress_salt_files.results }}"
+
+- name: Copy wp-config file
+  ansible.builtin.template:
+    src: wp-config.php.j2
+    dest: "{{ wordpress_root }}/{{ item.slug }}/wordpress/wp-config.php"
+    mode: "0640"
+    owner: "{{ item.user | default(wordpress_user) }}"
+    group: "{{ item.group | default(item.group | default(wordpress_group)) }}"
+  with_items: "{{ vanilla_wp_sites }}"
+
+- name: Ensure permissions
+  ansible.builtin.file:
+    path: "{{ wordpress_root }}/{{ item.slug }}/wordpress"
+    state: directory
+    owner: "{{ item.user | default(wordpress_user) }}"
+    group: "{{ item.group | default(wordpress_group) }}"
+    recurse: true
+  with_items: "{{ wordpress_sites }}"
+  tags: ["deploy"]
+
+- name: Install plugins
+  ansible.builtin.unarchive:
+    dest: "{{ wordpress_root }}/{{ item.0.slug }}/wordpress/wp-content/plugins"
+    src: "https://downloads.wordpress.org/plugin/{{ item.1 }}.latest-stable.zip"
+    remote_src: true
+    creates: "{{ wordpress_root }}/{{ item.0.slug }}\
+    /wordpress/wp-content/plugins/{{ item.1 }}"
+  loop: >-
+    {{
+    wordpress_sites|subelements('plugins', {'skip_missing': True})
+    + wordpress_sites|json_query('[?!plugins]')|product(wordpress_plugins)|list
+    }}

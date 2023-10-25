@@ -1,0 +1,102 @@
+{% extends "templates/nginx_site.conf.j2" %}
+
+{% block http %}
+  fastcgi_cache_path /var/cache/nginx/{{ item.slug }}  levels=1:2 keys_zone={{ item.slug }}:10m max_size=250m inactive=1h;
+
+  {% if item.limit_requests| default(wordpress_limit_requests) -%}
+  map $request_method $limit_key {
+    "POST" $remote_addr;
+    default "";
+  }
+
+  limit_req_zone $limit_key zone=limit_{{ item.slug }}:10m rate=1r/s;
+  {%- endif %}
+
+  map $request_uri $cache_request_uri {
+    ~^(?<captured_uri>.+)([?&]fbclid=[a-zA-Z0-9_-]+)$ $captured_uri;
+    default $request_uri;
+  }
+{% endblock %}
+
+{% block locations %}
+  root {{ wordpress_web_root }};
+  index index.php index.htm index.html;
+  add_header Fastcgi-Cache $upstream_cache_status;
+
+  client_max_body_size 50m;
+
+  {% if item.cache is defined and item.cache.enabled | default(false) -%}
+  # Fastcgi cache conditions
+  set $skip_cache 0;
+
+  if ($request_uri ~* "{{ item.cache.skip_cache_uri | default(wordpress_skip_cache_uri) }}") {
+    set $skip_cache 1;
+  }
+  if ($http_cookie ~* "{{ item.cache.skip_cache_cookie | default(wordpress_skip_cache_cookie) }}") {
+    set $skip_cache 1;
+  }
+
+  {% endif -%}
+
+  {% if item.disable_rpc | default(wordpress_disable_rpc) -%}
+  location ~* ^/(wp/)?xmlrpc\.php$ {
+    deny all;
+  }
+  {% endif -%}
+
+  # Allow direct access and cache some file types
+  location ~* \.(js|css|png|jpg|jpeg|gif|ico|woff2|woff|ttf|webp)$ {
+    expires max;
+    log_not_found off;
+
+    location ~* /(wp-content|app)/themes/.*\.(woff2|woff|ttf)$ {
+      add_header 'Access-Control-Allow-Origin' '*';
+    }
+  }
+
+  # Allow direct access to all extensions in trusted uploaded folders
+  location ~* /(wp-content|app)/uploads/(woocommerce_uploads/)?(20[12][0-9]|elementor) {
+    location ~* \.(pdf)$ {
+      add_header 'Access-Control-Allow-Origin' 'https://mozilla.github.io';
+    }
+  }
+
+  # Prevent public access to unkown extensions in unkown uploads folder
+  location ~* /(wp-content|app)/uploads {
+    try_files /index.php?$args =404;
+  }
+
+  location / {
+    try_files $uri $uri/ /index.php?$args;
+  }
+
+  location ~ \.php$ {
+    try_files $uri /index.php;
+    expires -1;
+
+    {% if item.cache is defined and item.cache.enabled | default(false) -%}
+    # Fastcgi cache settings
+    fastcgi_cache {{ item.slug }};
+    fastcgi_cache_valid {{ item.cache.duration | default(wordpress_cache_duration) }};
+    fastcgi_cache_lock on;
+    fastcgi_cache_lock_timeout 10s;
+    fastcgi_cache_use_stale error timeout updating;
+    {% if ansible_distribution_release != 'xenial' or nginx_latest_ppa -%}
+    fastcgi_cache_background_update on;
+    {% endif %}
+    fastcgi_cache_bypass $skip_cache;
+    fastcgi_no_cache $skip_cache;
+    fastcgi_cache_key $realpath_root$scheme$host$cache_request_uri$request_method;
+    fastcgi_ignore_headers Cache-Control Expires Set-Cookie;
+    {% endif -%}
+
+    include fastcgi_params;
+    fastcgi_param SCRIPT_FILENAME $realpath_root$fastcgi_script_name;
+    fastcgi_pass unix:/var/run/php-fpm-wordpress-{{ item.slug }}.sock;
+    fastcgi_intercept_errors on;
+
+    {% if item.limit_requests| default(wordpress_limit_requests) -%}
+    limit_req zone=limit_{{ item.slug }} burst=5 nodelay;
+    {%- endif %}
+  }
+{% endblock %}
