@@ -1,6 +1,7 @@
+---
 namespace: "aktiur"
 name: "basic_roles"
-version: "0.2.5"
+version: "0.2.6"
 readme: "README.md"
 authors:
   - "Maud Royer"

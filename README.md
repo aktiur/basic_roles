@@ -14,6 +14,7 @@ Ces rôles permettent la configuration de serveurs sous Ubuntu.
 - nginx_letsencrypt: crée un certificat pour nginx
 - django: installe une application django
 - matomo: un serveur d'analytiques web
+- wordpress: une instance wordpress
 
 ## Rôles de base de données
 
