@@ -14,7 +14,7 @@
       - "locales"
       - "libjson-perl"
     state: present
-    update_cache: yes
+    update_cache: true
     cache_valid_time: "{{ apt_cache_valid_time | default (3600) }}"
   tags: [postgresql]
 

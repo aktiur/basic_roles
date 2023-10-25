@@ -23,7 +23,7 @@
   handlers:
     - name: reload systemd
       systemd:
-        reload-daemon: yes
+        reload-daemon: true
 
   tasks:
     - name: Allow connections from source {{ source }} on 80
@@ -38,7 +38,7 @@
         name: nginx_letsencrypt
     - name: Remove firewall rule
       ufw:
-        delete: yes
+        delete: true
         rule: allow
         direction: in
         from_ip: "{{ hostvars[source]['ansible_host'] }}"

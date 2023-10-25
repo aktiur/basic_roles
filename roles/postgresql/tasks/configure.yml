@@ -15,7 +15,7 @@
     - skip_ansible_lint
 
 - name: Configure | Ensure the locale for lc_collate and lc_ctype is generated | Debian
-  become: yes
+  become: true
   locale_gen:
     name: "{{ postgresql_collation }}"
     state: present
@@ -33,7 +33,7 @@
     -e {{ postgresql_encoding }}
     {{ postgresql_version }} {{ postgresql_cluster_name|quote }} >&2
     && pg_lsclusters -j
-  become: yes
+  become: true
   register: new_cluster_info
   when: cluster_info.changed
   tags:
@@ -76,7 +76,7 @@
 
 - name: Configure | Reload systemd
   systemd:
-    daemon_reload: yes
+    daemon_reload: true
   when: new_cluster_info.changed or postgresql_configuration_enabled.changed
   tags:
     - skip_ansible_lint  # avoid 'should be handler' warning

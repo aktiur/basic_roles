@@ -22,9 +22,9 @@ postgresql_service_enabled: true
 # ------------------------------
 # OPTIONS
 # ------------------------------
-postgresql_enabled: yes
+postgresql_enabled: true
 
-postgresql_ext_install_postgis: no
+postgresql_ext_install_postgis: false
 postgresql_ext_postgis_version: "3"
 postgresql_ext_postgis_deps:
   - libgeos-c1v5

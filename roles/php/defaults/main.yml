@@ -6,7 +6,7 @@ php_distro_versions:
 php_version: "{{ php_distro_versions[ansible_distribution_release] }}"
 php_conf_directory: /etc/php/{{ php_version }}
 
-php_disable_default_pool: yes
+php_disable_default_pool: true
 
 php_extensions:
   - php-cli

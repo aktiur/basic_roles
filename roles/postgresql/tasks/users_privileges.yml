@@ -8,7 +8,7 @@
     state: present
     login_user: "{{ postgresql_admin_user }}"
     role_attr_flags: "{{ item.role_attr_flags | default(omit) }}"
-  become: yes
+  become: true
   become_user: "{{ postgresql_admin_user }}"
   loop: "{{ postgresql_user | subelements(privileges, skip_missing=True) }}"
   when: postgresql_users|length > 0

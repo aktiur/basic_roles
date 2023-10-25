@@ -15,7 +15,7 @@
     template: "template0"
     state: present
     login_user: "{{ postgresql_cluster_user }}"
-  become: yes
+  become: true
   become_user: "{{ postgresql_cluster_user }}"
   loop: "{{ postgresql_databases }}"
   when: postgresql_databases|length > 0
@@ -25,6 +25,6 @@
     db: "{{ item.0.name }}"
     name: "{{ item.1 }}"
     login_user: "{{ postgresql_cluster_user }}"
-  become: yes
+  become: true
   become_user: "{{ postgresql_cluster_user }}"
   loop: "{{ postgresql_databases | subelements('extensions', skip_missing=True) }}"
