@@ -1,5 +1,0 @@
----
-letsencrypt_certificates: []
-letsencrypt_domains: []
-letsencrypt_main_domain: "{{ letsencrypt_certificates[0].name \
-  if len(letsencrypt_certificates) else letsencrypt_domains[0] }}"
