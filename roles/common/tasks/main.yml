@@ -9,6 +9,10 @@
     msg: You need to use one of the supported releases
   when: ansible_distribution_release not in supported_releases
 
+- name: Ensure hostname is correctly set
+  ansible.builtin.hostname:
+    name: "{{ hostname }}"
+
 - name: Ensure sudoers file is present
   ansible.builtin.copy:
     src: sudoers
@@ -37,13 +41,10 @@
       - net-tools
       - ufw
       - sudo
-
-- name: Ensure packages specific to bionic and forward are installed
-  ansible.builtin.apt:
-    name:
       - rsyslog
-  when: ansible_distribution_release != 'xenial'
+      - fail2ban
 
+# to add label to a volume : 'e2label /dev/sda5 "MY_BACKUP"'
 - name: Ensure additional filesystems are mounted
   ansible.posix.mount:
     state: mounted
@@ -66,40 +67,12 @@
   when: default_locale is defined
 
 - name: Ensure system wide known hosts file exists
-  ansible.builtin.file:
-    path: /etc/ssh/ssh_known_hosts
-    state: touch
+  ansible.builtin.copy:
+    src: ssh_known_hosts
+    dest: /etc/ssh/ssh_known_hosts
     owner: root
     group: root
     mode: "0644"
-    modification_time: preserve
-    access_time: preserve
-
-- name: Ensure github is in known hosts
-  ansible.builtin.lineinfile:
-    path: /etc/ssh/ssh_known_hosts
-    regexp: "^github.com "
-    line: "github.com ssh-rsa AAAAB3NzaC1yc2EAAAABIwAAAQEAq2A7hRGmdnm9tUDbO9IDS\
-      wBK6TbQa+PXYPCPy6rbTrTtw7PHkccKrpp0yVhp5HdEIcKr6pLlVDBfOLX9QUsyCOV0wzfjIJ\
-      NlGEYsdlLJizHhbn2mUjvSAHQqZETYP81eFzLQNnPHt4EVVUh7VfDESU84KezmD5QlWpXLmvU\
-      31/yMf+Se8xhHTvKSCZIFImWwoG6mbUoWf9nzpIoaSjB+weqqUUmpaaasXVal72J+UX2B+2RP\
-      W3RcT0eOzQgqlJL3RKrTJvdsjE3JEAvGq3lGHSZXy28G3skua2SmVi/w4yCE6gbODqnTWlg7+\
-      wC604ydGXA8VJiS5ap43JXiUFFAaQ=="
-
-- name: "Ensure fail2ban is {{ cloudflare_protected | bool | \
-    ternary('absent', 'present') }}"
-  ansible.builtin.apt:
-    name: fail2ban
-    state: "{{ cloudflare_protected | bool | ternary('absent', 'present') }}"
-
-- name: Ensure nginx is enabled in fail2ban
-  ansible.builtin.copy:
-    src: fail2ban_nginx.conf
-    dest: /etc/fail2ban/jail.d/nginx.conf
-    mode: "0644"
-  notify:
-    - Restart fail2ban
-  when: not cloudflare_protected | bool
 
 - name: Ensure journal directory is created so that logs are persisted
   ansible.builtin.file:
@@ -108,7 +81,7 @@
     group: systemd-journal
     mode: "02755"
   notify:
-    - Restart journald
+    - restart journald
 
 
 # Dans sa séquence d'initialisation, UFW fait un truc un peu bête : il règle la
@@ -117,8 +90,8 @@
 #
 # Résultat, si on met la politique par défaut à DENY, le changement de politique
 # se met à bloquer la connexion des disques réseaux, ce qui coupe les connexions
-# déjà existantes… et notamment celles aux disques réseau, ce qui fait planter
-# le boot.
+# déjà existantes… et notamment celles aux disques réseau, ce qui fait planter le
+# boot.
 #
 # Du coup, comme workaround, on indique comme politique par défaut ALLOW, mais
 # on rajoute à la chaîne qu'UFW utilise comme post-traitement pour les paquets
@@ -129,17 +102,17 @@
 # rien de tout cela n'est directement visible dans l'interface de UFW qui
 # affiche simplement que la politique par défaut est ALLOW.
 
-- name: Ensure ufw default allow not to block nbd
-  community.general.ufw:
+- name: ufw default allow not to block nbd
+  ufw:
     policy: allow
 
-- name: Ensure ufw allow ssh
-  community.general.ufw:
+- name: ufw allow ssh
+  ufw:
     rule: allow
     port: "22"
 
-- name: Ensure ufw drop all packets in "after rules"
-  ansible.builtin.lineinfile:
+- name: ufw drop all packets in "after rules"
+  lineinfile:
     path: /etc/ufw/after{{ item }}.rules
     line: "-A ufw{{ item }}-reject-input -j DROP"
     insertbefore: COMMIT
@@ -147,12 +120,12 @@
     - ''
     - '6'
 
-- name: Enable ufw
-  community.general.ufw:
+- name: enable ufw
+  ufw:
     state: enabled
 
-- name: Ensure diagnostic tools are installed
-  ansible.builtin.apt:
+- name: ensure diagnostic tools are installed
+  apt:
     name:
       - mtr
       - knot-dnsutils
@@ -162,30 +135,3 @@
       - vnstat
       - hping3
       - nload
-
-- name: Create google fonts directory
-  ansible.builtin.file:
-    path: "{{ google_fonts_directory }}"
-    state: directory
-    mode: "0755"
-
-- name: Downlad required google fonts
-  ansible.builtin.get_url:
-    url: "https://fonts.google.com/download?family=\
-      {{ required_fonts | join('|') | urlencode }}"
-    dest: /tmp/google_fonts.zip
-    mode: "0644"
-  when: google_fonts_required|length > 0
-
-- name: Unpack google fonts
-  ansible.builtin.unarchive:
-    src: /tmp/google_fonts.zip
-    dest: "{{ google_fonts_directory }}"
-    remote_src: true
-  register: fonts_copied
-  when: google_fonts_required|length > 0
-
-- name: Update font cache
-  ansible.builtin.command: fc-cache
-  changed_when: true
-  when: google_fonts_required|length > 0 and fonts_copied.changed
