@@ -1,0 +1,38 @@
+- name: récupère la clé du repo pour Caddy
+  get_url:
+    url: https://dl.cloudsmith.io/public/caddy/stable/gpg.key
+    dest: /usr/share/keyrings/caddy-stable-archive-keyring.asc
+    checksum: sha256:783dfee04b19e851a928cd87b34710213ebbe7628f98d9f34595ab83be578c00
+
+- name: ajoute le repo pour Caddy
+  ansible.builtin.apt_repository:
+    repo: deb [signed-by=/usr/share/keyrings/caddy-stable-archive-keyring.asc] https://dl.cloudsmith.io/public/caddy/stable/deb/debian any-version main
+
+- name: installe Caddy
+  ansible.builtin.apt:
+    name: caddy
+    state: present
+
+- name: installe la configuration de Caddy
+  ansible.builtin.template:
+    src: Caddyfile.j2
+    dest: /etc/caddy/Caddyfile
+  notify: recharge Caddy
+
+- name: crée les dossiers des configurations de site
+  ansible.builtin.file:
+    path: /etc/caddy/{{ item }}
+    state: directory
+  loop:
+    - sites-available
+    - sites-enabled
+
+- name: Open port 80
+  ufw:
+    rule: allow
+    port: "80"
+
+- name: Open port 443
+  ufw:
+    rule: allow
+    port: "443"

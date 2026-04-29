@@ -1,0 +1,4 @@
+- name: recharge Caddy
+  systemd:
+    name: caddy.service
+    state: reloaded
