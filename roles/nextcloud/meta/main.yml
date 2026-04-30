@@ -1,6 +1,6 @@
 galaxy_info:
-  role_name: common
-  description: Un rôle qui installe les fonctionnalités de base
+  role_name: nextcloud
+  description: Un rôle qui installe Nextcloud en snap
   author: Maud Royer & Salomé Cheysson
   platforms:
     - name: Ubuntu

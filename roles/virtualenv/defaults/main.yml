@@ -1,3 +1,0 @@
-virtualenv_pipenv_install_dev: false
-virtualenv_poetry_venv: "/opt/poetry"
-virtualenv_poetry_command: "{{ virtualenv_poetry_venv }}/bin/poetry"

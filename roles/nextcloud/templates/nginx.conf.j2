@@ -1,0 +1,14 @@
+{% extends "nginx_site.conf.j2" %}
+
+{% block http %}
+  upstream nextcloud {
+    server 127.0.0.1:{{ nextcloud_port }};
+  }
+{% endblock %}
+
+{% block locations %}
+  location / {
+    include /etc/nginx/proxy_params;
+    proxy_pass http://nextcloud;
+  }
+{% endblock %}

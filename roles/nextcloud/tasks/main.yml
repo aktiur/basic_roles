@@ -1,0 +1,32 @@
+---
+- name: installe le snap pour nextcloud
+  snap:
+    name: nextcloud
+    state: present
+
+- name: ajoute l'accès aux médias externes au snap
+  command: snap connect nextcloud:removable-media
+
+- name: règle le port sur lequel nextcloud écoute
+  command:
+    cmd: snap set nextcloud nextcloud.http={{ nextcloud_port }}
+
+- name: S'assure que la configuration additionnelle de nextcloud est présente
+  template:
+    src: additional.config.php.j2
+    dest: /var/snap/nextcloud/current/nextcloud/config/additional.config.php
+    mode: u=rw,g=r
+
+- name: S'assure que la configuration de caddy est présente
+  template:
+    src: nginx.conf.j2
+    dest: etc/caddy/sites-available/nextcloud.site
+    mode: "0644"
+  notify: recharge caddy
+
+- name: S'assure que la configuration de caddy est active
+  file:
+    state: link
+    path: "/etc/caddy/sites-enabled/10-nextcloud.site"
+    src: ../sites-available/nextcloud.conf
+  notify: recharge caddy
