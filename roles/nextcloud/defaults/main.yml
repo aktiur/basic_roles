@@ -1,1 +1,3 @@
 ---
+nextcloud_port: 8080
+nextcloud_redirect_domains: []

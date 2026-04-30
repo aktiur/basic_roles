@@ -1,13 +1,20 @@
 {{ nextcloud_domain }} {
+    {% if nextcloud_bind_address is defined and nextcloud_bind_address %}
+    bind {{ nextcloud_bind_address }}
+    {% endif %}
 	reverse_proxy localhost:{{ nextcloud_port }}
 }
 
 {% if nextcloud_redirect_domains %}
-{{ redirect_domains|join(", ") }} {
+{{ nextcloud_redirect_domains|join(", ") }} {
+    {% if nextcloud_bind_address is defined and nextcloud_bind_address %}
+    bind {{ nextcloud_bind_address }}
+    {% endif %}
+
     @post {
         method POST
     }
-    redir @post https://{{ main_domain }}{uri} 308
-    redir https://{{ main_domain }}{uri} 301
+    redir @post https://{{ nextcloud_domain }}{uri} 308
+    redir https://{{ nextcloud_domain }}{uri} 301
 }
 {% endif %}

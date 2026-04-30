@@ -1,4 +1,12 @@
 ---
+- ansible.builtin.fail: msg="La variable '{{ item }}' n'est pas définie"
+  when: item not in hostvars[inventory_hostname]
+  with_items:
+   - smtp_user
+   - smtp_password
+   - smtp_host
+   - smtp_domain
+
 - name: Make sure apt packages for mstmp are present
   ansible.builtin.apt:
     name:
