@@ -4,3 +4,7 @@
 
 - name: restart journald
   service: name=systemd-journald state=restarted
+
+- name: apply netplan
+  ansible.builtin.command:
+    cmd: netplan apply
