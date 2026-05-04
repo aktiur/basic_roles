@@ -2,12 +2,12 @@
 - name: Check we are on Ubuntu release
   ansible.builtin.fail:
     msg: You need to use Ubuntu Server
-  when: ansible_distribution != "Ubuntu"
+  when: ansible_facts["distribution"] != "Ubuntu"
 
 - name: Check we are on correct release
   ansible.builtin.fail:
     msg: You need to use one of the supported releases
-  when: ansible_distribution_release not in supported_releases
+  when: ansible_facts["distribution_release"] not in supported_releases
 
 - name: Ensure hostname is correctly set
   ansible.builtin.hostname:
@@ -31,7 +31,6 @@
   ansible.builtin.apt:
     name:
       - build-essential
-      - python{{ system_python_version }}-pip
       - software-properties-common
       - apt-transport-https
       - apt-utils
