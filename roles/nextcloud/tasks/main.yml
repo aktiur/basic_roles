@@ -24,14 +24,14 @@
 
 - name: S'assure que la configuration de caddy est présente
   ansible.builtin.template:
-    src: nginx.conf.j2
-    dest: etc/caddy/sites-available/nextcloud.site
+    src: Caddyfile.j2
+    dest: /etc/caddy/sites-available/nextcloud.site
     mode: "0644"
-  notify: recharge caddy
+  notify: recharge Caddy
 
 - name: S'assure que la configuration de caddy est active
   ansible.builtin.file:
     state: link
     path: "/etc/caddy/sites-enabled/10-nextcloud.site"
-    src: ../sites-available/nextcloud.conf
-  notify: recharge caddy
+    src: ../sites-available/nextcloud.site
+  notify: recharge Caddy
