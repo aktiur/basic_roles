@@ -25,7 +25,7 @@
   ansible.builtin.apt:
     upgrade: dist
     update_cache: true
-    cache_valid_time: "{{ apt_cache_valid_time | default(3600) }}"
+    cache_valid_time: "{{ apt_cache_valid_time | default(7200) }}"
 
 - name: Ensure essentials packages are installed
   ansible.builtin.apt:
@@ -42,6 +42,7 @@
       - sudo
       - rsyslog
       - fail2ban
+    state: present
 
 # to add label to a volume : 'e2label /dev/sda5 "MY_BACKUP"'
 - name: Ensure additional filesystems are mounted

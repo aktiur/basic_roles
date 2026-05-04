@@ -34,4 +34,5 @@
     state: link
     path: "/etc/caddy/sites-enabled/10-nextcloud.site"
     src: ../sites-available/nextcloud.site
+
   notify: recharge Caddy

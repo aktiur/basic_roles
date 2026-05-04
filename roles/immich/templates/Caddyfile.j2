@@ -1,0 +1,20 @@
+{{ immich_domain }} {
+    {% if immich_bind_address is defined and immich_bind_address %}
+    bind {{ immich_bind_address }}
+    {% endif %}
+	reverse_proxy localhost:2283
+}
+
+{% if immich_redirect_domains %}
+{{ immich_redirect_domains|join(", ") }} {
+    {% if immich_bind_address is defined and immich_bind_address %}
+    bind {{ immich_bind_address }}
+    {% endif %}
+
+    @post {
+        method POST
+    }
+    redir @post https://{{ immich_domain }}{uri} 308
+    redir https://{{ immich_domain }}{uri} 301
+}
+{% endif %}

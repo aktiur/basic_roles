@@ -1,0 +1,51 @@
+---
+- name: ensure required variables are defined
+  ansible.builtin.fail: msg="La variable '{{ item }}' n'est pas définie"
+  when: item not in hostvars[inventory_hostname]
+  with_items:
+   - immich_data_dir
+   - immich_postgres_password
+
+- ansible.builtin.apt:
+    name:
+      - docker.io
+      - docker-compose-v2
+    state: present
+
+- name: ensure /opt/immich exists
+  ansible.builtin.file:
+    path: /opt/immich
+    state: directory
+
+- name: ensure docker-compose.yml is present
+  ansible.builtin.get_url:
+    url: https://github.com/immich-app/immich/releases/download/v2.7.5/docker-compose.yml
+    dest: /opt/immich/docker-compose.yml
+    checksum: sha256:69da59c813f1382400a8fe9fce9f51ac00a4d05d7d1571a0d49dcd517ae41ad5
+
+- name: ensure env file is present
+  ansible.builtin.template:
+    src: env.j2
+    dest: /opt/immich/.env
+    owner: root
+    group: root
+    mode: 0600
+
+- name: ensure immich is running
+  community.docker.docker_compose_v2:
+    project_src: /opt/immich
+    build: "always"
+
+- name: S'assure que la configuration de caddy est présente
+  ansible.builtin.template:
+    src: Caddyfile.j2
+    dest: /etc/caddy/sites-available/immich.site
+    mode: "0644"
+  notify: recharge Caddy
+
+- name: S'assure que la configuration de caddy est active
+  ansible.builtin.file:
+    state: link
+    path: "/etc/caddy/sites-enabled/10-immich.site"
+    src: ../sites-available/nextcloud.site
+  notify: recharge Caddy
