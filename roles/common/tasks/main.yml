@@ -56,7 +56,10 @@
 - name: Configure additional adresses
   ansible.builtin.template:
     src: additional_ips.yaml.j2
-    dest: /etc/netplan/99-additional-ips.yaml
+    # bizarrement c'est la dernière IP ajoutée qui est utilisée par défaut
+    # il faut donc que les IPs additionnelles soient ajoutées avant la configuration
+    # issue de cloud-init (50 sur Ubuntu)
+    dest: /etc/netplan/10-additional-ips.yaml
     owner: root
     group: root
     mode: "0600"
