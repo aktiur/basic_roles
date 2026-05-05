@@ -8,13 +8,13 @@
   community.general.snap:
     name: nextcloud
     state: present
+    options:
+      - nextcloud:ports.http={{ nextcloud_port }}
 
 - name: ajoute l'accès aux médias externes au snap
-  ansible.builtin.command: snap connect nextcloud:removable-media
-
-- name: règle le port sur lequel nextcloud écoute
-  ansible.builtin.command:
-    cmd: snap set nextcloud ports.http={{ nextcloud_port }}
+  community.general.snap_connect:
+    plug: nextcloud:removable-media
+    slot: ":removable-media"
 
 - name: S'assure que la configuration additionnelle de nextcloud est présente
   ansible.builtin.template:
@@ -34,5 +34,4 @@
     state: link
     path: "/etc/caddy/sites-enabled/10-nextcloud.site"
     src: ../sites-available/nextcloud.site
-
   notify: recharge Caddy
